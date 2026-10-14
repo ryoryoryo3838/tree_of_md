@@ -367,6 +367,145 @@ let test_native_identifier_links () =
        "REFERENCE", "https://www.doi.org/10.0000/synthetic"];
     Alcotest.(check string) "producer input bytes remain intact" before (read_text input))
 
+let unavailable () = obj ["kind", `String "unavailable"]
+let test_unavailable_default () =
+  let link = "\\p{\\<html:a>[href]{/_unavailable/}{\\verbFMD|[FMD非公開\\verbFMD|]FMD}}\n" in
+  let child = tree ~id:"CHILD" ~content:[unavailable ()] () in
+  let root = tree ~id:"PUBLICA" ~content:[markdown "before"; unavailable ();
+    subtree child; subtree (tree ~content:[unavailable ()] ()); markdown "after"] () in
+  Alcotest.(check string) "closed unavailable placement needs no graph target"
+    ("\\title{Public title}\n\\p{before}\n" ^ link ^
+     "\\subtree[CHILD]{\n\\title{Public title}\n" ^ link ^ "}\n" ^
+     "\\subtree{\n\\title{Public title}\n" ^ link ^ "}\n\\p{after}\n")
+    (List.assoc "PUBLICA.tree" (compile (forest [root])));
+  List.iter (fun key -> expect_code "PF_SCHEMA" (forest [tree ~id:"PUBLICA"
+    ~content:[set key (`String "PRIVATE_FIELD_CANARY") (unavailable ())] ()]))
+    ["id"; "target"; "path"; "source"; "sourcePath"; "filename"; "privateLabel";
+     "flags"; "reason"; "header"; "toc"; "href"; "url"; "tree"; "text"];
+  expect_code "PF_SCHEMA" (forest [tree ~id:"PUBLICA" ~content:[obj
+    ["kind", `String "unavailable"; "kind", `String "unavailable"]] ()])
+
+let test_unavailable_literal_label () =
+  let label = "公開題名 🙂 100% {A} \\title{INJECTION} [B](C) #{D} FMD &amp; &#91; <script>" in
+  let node = set "label" (`String label) (unavailable ()) in
+  let rendered = List.assoc "PUBLICA.tree" (compile (forest [tree ~id:"PUBLICA" ~content:[node] ()])) in
+  Alcotest.(check string) "semantic literal label, metadata escaping, no entity decoding"
+    ("\\title{Public title}\n\\p{\\<html:a>[href]{/_unavailable/}{" ^
+     "公開題名 🙂 100\\% \\verbFMD|{FMDA\\verbFMD|}FMD \\verbFMD|\\FMDtitle\\verbFMD|{FMDINJECTION\\verbFMD|}FMD " ^
+     "\\verbFMD|[FMDB\\verbFMD|]FMD\\verbFMD|(FMDC\\verbFMD|)FMD \\verbFMD|#FMD\\verbFMD|{FMDD\\verbFMD|}FMD FMD &amp; &\\verbFMD|#FMD91; <script>}}\n")
+    rendered;
+  List.iter (fun label ->
+    let out = List.assoc "PUBLICA.tree" (compile (forest [tree ~id:"PUBLICA"
+      ~content:[set "label" (`String label) (unavailable ())] ()])) in
+    Alcotest.(check string) "same accepted literal bytes as metadata, no trimming or normalization"
+      ("\\title{Public title}\n\\p{\\<html:a>[href]{/_unavailable/}{" ^ Forester_6.escape_literal label ^ "}}\n") out)
+    [""; "  公開題名  "; "é"; "[[MISSING]] ![[MISSING]] %%p%% $\\input{x}$";
+     "line one\nline two\tend\r\n"; String.make Public_forest.max_chunk_bytes 'a'];
+  List.iter (fun value -> expect_code "PF_SCHEMA" (forest [tree ~id:"PUBLICA"
+    ~content:[set "label" value (unavailable ())] ()]))
+    [`Null; `Bool false; `Int 1; `List []; obj []; `String "bad\000label";
+     `String "bad\001label"; `String "bad\008label"; `String "bad\011label";
+     `String "bad\012label"; `String "bad\127label"];
+  expect_code "PF_JSON" (forest [tree ~id:"PUBLICA"
+    ~content:[set "label" (`String (String.make 1 (Char.chr 255))) (unavailable ())] ()]);
+  expect_code "PF_LIMIT" (forest [tree ~id:"PUBLICA"
+    ~content:[set "label" (`String (String.make (Public_forest.max_chunk_bytes+1) 'a')) (unavailable ())] ()]);
+  expect_code "PF_SCHEMA" (forest [tree ~id:"PUBLICA" ~content:[obj
+    ["kind", `String "unavailable"; "label", `String "Public"; "label", `String "Other"]] ()]);
+  List.iter (fun key -> expect_code "PF_SCHEMA" (forest [tree ~id:"PUBLICA"
+    ~content:[set key (`String "PRIVATE_FIELD_CANARY") node] ()]))
+    ["id"; "targetId"; "target"; "source"; "path"; "filename"; "reason"; "href"; "flags"]
+
+let test_unavailable_guard_regression () =
+  let mixed content = forest [tree ~id:"PUBLICA" ~content:(unavailable ()::content) ()] in
+  List.iter (fun content -> expect_code "PF_TARGET" (mixed content))
+    [[transclude "MISSING"]; [markdown "[[MISSING|Public label]]"];
+     [markdown "[Public label](MISSING)"]; [transclude "publica"]];
+  List.iter (fun key -> expect_code "PF_TARGET" (mixed [] |> fun json ->
+    set "trees" (`List [tree ~id:"PUBLICA" ~content:[unavailable ()] ()
+      |> set key (`List [attribution "MISSING"])]) json)) ["authors"; "contributors"];
+  List.iter (fun text -> expect_code "PF_MARKDOWN" (mixed [markdown text]))
+    ["[literal](/_unavailable/)"; "[literal](private/path)";
+     "\\<html:a>[href]{/_unavailable/}{injection}";
+     "\\{\\<html:a>[href]{/_unavailable/}{injection}}";
+     "<a href=\"/_unavailable/\">injection</a>"; "![[MISSING]]";
+     "%%p%%"; "<!-- private -->"; "$\\input{x}$"];
+  expect_code "PF_CYCLE" (mixed [transclude "PUBLICA"]);
+  expect_code "PF_CYCLE" (mixed [subtree (tree ~content:[unavailable (); transclude "PUBLICA"] ())]);
+  let protected = "`[literal](/_unavailable/) ![[MISSING]] %%p%%`" in
+  ignore (compile (mixed [markdown protected]));
+  let raw_node node = "{\"schema\":\"forester-public-v2\",\"assets\":[],\"trees\":[" ^
+    "{\"id\":\"PUBLICA\",\"title\":\"Public\",\"authors\":[],\"dates\":[]," ^
+    "\"contributors\":[],\"properties\":{},\"citationAuthors\":[],\"content\":[" ^ node ^ "]}]}" in
+  List.iter (fun node -> reject_text ~code:"PF_SCHEMA" (raw_node node))
+    ["{\"kind\":\"unavailable\",\"label\":\"Public\",\"la\\u0062el\":\"Other\"}";
+     "{\"kind\":\"unavailable\",\"ki\\u006ed\":\"unavailable\"}";
+     "{\"kind\":\"unavailable\",\"label\":\"Public\",\"\\u0069d\":\"PRIVATE_ID_CANARY\"}"];
+  List.iter (fun label -> reject_text ~code:"PF_JSON" (raw_node
+    ("{\"kind\":\"unavailable\",\"label\":\"" ^ label ^ "\"}")))
+    ["\\ud800"; "\\udfff"; "\\ud800\\u0041"]
+
+let test_unavailable_cli () = with_temp (fun dir ->
+  let input = Filename.concat dir "private-input-canary.json" in
+  let output = Filename.concat dir "refused/trees" and log = Filename.concat dir "log" in
+  let good = forest [tree ~id:"PUBLICA" ~content:[unavailable ()] ()] in
+  List.iter (fun (code,json) ->
+    write_text input (Yojson.Safe.to_string json);
+    let before = read_text input and stat = Unix.stat input in
+    Alcotest.(check int) "actual CLI refuses hostile node before mkdir" 1
+      (run_cli ["--public-forest";input;"--out-dir";output] log);
+    Alcotest.(check string) "source-free diagnostic only" (code ^ "\n") (read_text log);
+    Alcotest.(check bool) "no output ancestors" false (Sys.file_exists (Filename.dirname output));
+    Alcotest.(check string) "input bytes preserved" before (read_text input);
+    Alcotest.(check (float 0.)) "input mtime preserved" stat.Unix.st_mtime (Unix.stat input).Unix.st_mtime)
+    ["PF_SCHEMA", forest [tree ~id:"PUBLICA" ~content:[set "target" (`String "PRIVATE_ID_CANARY") (unavailable ())] ()];
+     "PF_SCHEMA", forest [tree ~id:"PUBLICA" ~content:[set "label" (`String "PRIVATE_TITLE_CANARY\000") (unavailable ())] ()];
+     "PF_ID", forest [tree ~id:"PUBLICA" ~content:[unavailable (); transclude "PRIVATE_ID_CANARY"] ()];
+     "PF_TARGET", forest [tree ~id:"PUBLICA" ~content:[unavailable (); transclude "PRIVATE-ID-CANARY"] ()];
+     "PF_MARKDOWN", forest [tree ~id:"PUBLICA" ~content:[unavailable (); markdown "[label](/_unavailable/)"] ()]];
+  write_text input (Yojson.Safe.to_string good);
+  let before = read_text input in
+  Alcotest.(check int) "actual CLI accepts the closed placement" 0
+    (run_cli ["--public-forest";input;"--out-dir";output] log);
+  Alcotest.(check string) "generic root count" "PF_OK 1\n" (read_text log);
+  Alcotest.(check string) "exact native link, no graph target" (List.assoc "PUBLICA.tree" (compile good))
+    (read_text (Filename.concat output "PUBLICA.tree"));
+  Alcotest.(check string) "accepted input unchanged" before (read_text input))
+
+let test_unavailable_native () =
+  match Sys.getenv_opt "PUBLIC_FOREST_TEST_FORESTER" with
+  | None -> ()
+  | Some forester -> with_temp (fun dir ->
+    let label = "公開題名 🙂 {A} \\title{INJECTION} #{\\input{private}} <script>alert(1)</script> &amp; &#91;" in
+    let labeled = set "label" (`String label) (unavailable ()) in
+    let input = Filename.concat dir "approved.json" in
+    write_text input (Yojson.Safe.to_string (forest [tree ~id:"PUBLICA"
+      ~content:[unavailable (); labeled; subtree (tree ~id:"CHILD" ~content:[labeled] ())] ()]));
+    let before = read_text input and log = Filename.concat dir "log" in
+    Alcotest.(check int) "actual changed CLI" 0
+      (run_cli ["--public-forest";input;"--out-dir";Filename.concat dir "trees"] log);
+    write_text (Filename.concat dir "forest.toml")
+      "[forest]\ntrees = [\"trees\"]\nassets = []\nhome = \"PUBLICA\"\nurl = \"https://example.invalid/\"\n";
+    Alcotest.(check int) "pinned native production HTML build" 0
+      (Sys.command ("cd " ^ Filename.quote dir ^ " && " ^ Filename.quote forester ^
+        " build --no-theme forest.toml > " ^ Filename.quote log ^ " 2>&1"));
+    List.iter (fun id ->
+      let html = read_text (Filename.concat dir ("output/" ^ id ^ "/index.html")) in
+      Alcotest.(check bool) "exact href, including the final slash" true
+        (Re.execp (Re.compile (Re.str "href=\"/_unavailable/\"")) html);
+      Alcotest.(check bool) "Forester/TeX payload remains literal in native HTML" true
+        (Re.execp (Re.compile (Re.str
+          "公開題名 🙂 {A} \\title{INJECTION} #{\\input{private}} &lt;script&gt;alert(1)&lt;/script&gt; &amp;amp; &amp;#91;")) html);
+      Alcotest.(check bool) "no injected script or math element" false
+        (Re.execp (Re.compile (Re.alt [Re.str "<script>alert(1)</script>"; Re.str "katex-math"])) html))
+      ["PUBLICA"; "CHILD"];
+    let html = read_text (Filename.concat dir "output/PUBLICA/index.html") in
+    Alcotest.(check bool) "fixed default literal label" true
+      (Re.execp (Re.compile (Re.str "href=\"/_unavailable/\">[非公開]</a>")) html);
+    Alcotest.(check bool) "no unavailable tree route generated" false
+      (Sys.file_exists (Filename.concat dir "output/_unavailable"));
+    Alcotest.(check string) "native build input unchanged" before (read_text input))
+
 let () = Alcotest.run "Public_forest"
   ["public-v2", [Alcotest.test_case "literal root and isolated Markdown" `Quick test_basic;
     Alcotest.test_case "exact schema rejects unknown keys and types" `Quick test_schema;
@@ -386,4 +525,9 @@ let () = Alcotest.run "Public_forest"
     Alcotest.test_case "inert encoded labels and protected text boundaries" `Quick test_literal_entity_labels;
     Alcotest.test_case "real Forester DOI/ORCID hrefs" `Quick test_native_identifier_links;
     Alcotest.test_case "strict native identifiers and official URL boundary" `Quick test_identifier_validation;
-    Alcotest.test_case "v2 calendar dates only, legacy timestamps unchanged" `Quick test_calendar_dates_only]]
+    Alcotest.test_case "v2 calendar dates only, legacy timestamps unchanged" `Quick test_calendar_dates_only;
+    Alcotest.test_case "closed unavailable default, no target or private fields" `Quick test_unavailable_default;
+    Alcotest.test_case "unavailable semantic literal label and closed validation" `Quick test_unavailable_literal_label;
+    Alcotest.test_case "unavailable keeps dangling/raw/graph guards closed" `Quick test_unavailable_guard_regression;
+    Alcotest.test_case "unavailable actual CLI refusal before writes" `Quick test_unavailable_cli;
+    Alcotest.test_case "unavailable exact href and literal label in native HTML" `Quick test_unavailable_native]]
