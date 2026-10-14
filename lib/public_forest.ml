@@ -219,6 +219,9 @@ let validate_schema json =
       ignore (object_fields ["kind";"id";"header";"toc"] ["kind";"id";"header";"toc"] json);
       ignore (id (member "id" json));
       List.iter (fun k -> ignore (boolean (member k json))) ["header";"toc"]
+    | "unavailable" ->
+      let fields = object_fields ["kind";"label"] ["kind"] json in
+      Option.iter (fun value -> ignore (string value)) (List.assoc_opt "label" fields)
     | _ -> fail Schema in
   let roots = list (member "trees" json) in
   List.iter (tree ~top:true 0) roots;
@@ -466,7 +469,8 @@ let validate_graph roots =
       | "markdown" ->
         let doc = parse_chunk (string (member "text" node)) in
         inspect_references (fun id -> ignore (target id)) doc.Ir.blocks
-      | _ -> ()) (list (member "content" tree))) !vertices;
+      | "subtree" | "unavailable" -> ()
+      | _ -> fail Schema) (list (member "content" tree))) !vertices;
   let queue = Queue.create () in
   Array.iteri (fun v n -> if n=0 then Queue.add v queue) incoming;
   let visited = ref 0 in
@@ -497,6 +501,12 @@ let compile_forest roots = protect (fun () ->
       if header && toc then transclusion ^ "\n"
       else "\\scope{\\put\\transclude/heading{" ^ string_of_bool header ^
         "}\\put\\transclude/toc{" ^ string_of_bool toc ^ "}" ^ transclusion ^ "}\n"
+    | "unavailable" ->
+      let label = Option.value (optional "label" node) ~default:"[非公開]" in
+      (* Native XML anchor builtin: [label](destination) instead enters URI
+         graph routing, which can suggest another tree and removes the final
+         slash. This fixed href must neither resolve nor authorize a target. *)
+      "\\p{\\<html:a>[href]{/_unavailable/}{" ^ Forester_6.escape_literal label ^ "}}\n"
     | _ -> fail Schema in
   List.sort (fun a b -> String.compare (string (member "id" a)) (string (member "id" b))) roots
   |> List.map (fun root -> (string (member "id" root) ^ ".tree", emit_tree root)))

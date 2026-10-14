@@ -1,5 +1,10 @@
 (** Public-v2 JSON-only conversion. No source discovery or publication policy.
-    Errors are stable codes and never contain input snippets or filenames. *)
+    The closed unavailable content node accepts only kind and an optional
+    literal label, with the same string validation/escaping as metadata. It
+    emits a native HTML anchor to the fixed /_unavailable/ href, defaulting to
+    [非公開], without creating or authorizing a graph target. Title disclosure
+    authorization belongs to the producer; arbitrary Markdown/raw link guards
+    are unchanged. Errors never contain input snippets or filenames. *)
 type error = Invalid_json | Schema | Invalid_id | Duplicate_id | Invalid_date
            | Unsafe_markdown | Missing_target | Cycle | Limit | Io | Unsafe_output
 type t
