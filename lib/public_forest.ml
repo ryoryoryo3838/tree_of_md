@@ -1,6 +1,6 @@
 type error = Invalid_json | Schema | Invalid_id | Duplicate_id | Invalid_date
            | Unsafe_markdown | Missing_target | Cycle | Limit | Io | Unsafe_output
-type t = Yojson.Safe.t list
+type t = { roots : Yojson.Safe.t list; assets : Yojson.Safe.t list }
 let error_code = function
  | Invalid_json -> "PF_JSON" | Schema -> "PF_SCHEMA" | Invalid_id -> "PF_ID"
  | Duplicate_id -> "PF_DUPLICATE_ID" | Invalid_date -> "PF_DATE"
@@ -122,6 +122,33 @@ let id json = let s = string json in
   if not (valid_id s) then fail Invalid_id;
   if String.length s > 250 then fail Limit; s
 let boolean = function `Bool b -> b | _ -> fail Schema
+let integer = function `Int n -> n | _ -> fail Schema
+let positive_integer maximum json =
+  let n = integer json in
+  if n < 1 then fail Schema;
+  if n > maximum then fail Limit;
+  n
+let dimension json = positive_integer 8192 json
+let digest json =
+  let value = string json in
+  if String.length value <> 64 || not (String.for_all (function
+    | '0'..'9' | 'a'..'f' -> true | _ -> false) value) then fail Schema;
+  value
+let image_alt json =
+  let value = string json in
+  let length = String.length value in
+  if length > 4096 then fail Limit;
+  String.iteri (fun i c ->
+    if Char.code c < 0x20 || Char.code c = 0x7f ||
+      (Char.code c = 0xc2 && i+1 < length &&
+       Char.code value.[i+1] >= 0x80 && Char.code value.[i+1] <= 0x9f)
+    then fail Schema;
+    let has token = i + String.length token <= length &&
+      String.sub value i (String.length token) = token in
+    if List.exists has ["[[";"]]";"%%";"#{";"\\{";"<!--"] ||
+      (c='\\' && i+1 < length && (match value.[i+1] with
+        | 'A'..'Z' | 'a'..'z' | '<' -> true | _ -> false)) then fail Schema) value;
+  value
 let property_keys = ["position"; "institution"; "venue"; "source"; "doi";
   "orcid"; "external"; "slides"; "video"; "bibtex"; "author"]
 let starts prefix s = String.starts_with ~prefix s
@@ -169,7 +196,23 @@ let native_property key value =
 let validate_schema json =
   ignore (object_fields ["schema";"trees";"assets"] ["schema";"trees";"assets"] json);
   if string (member "schema" json) <> "forester-public-v2" then fail Schema;
-  if list (member "assets" json) <> [] then fail Schema;
+  let assets = list (member "assets" json) in
+  if List.length assets > 128 then fail Limit;
+  let registered = Hashtbl.create 128 and used = Hashtbl.create 128 in
+  let previous = ref None and total_bytes = ref 0 in
+  List.iter (fun asset ->
+    let keys = ["sha256";"mime";"bytes";"width";"height"] in
+    ignore (object_fields keys keys asset);
+    let sha256 = digest (member "sha256" asset) in
+    Option.iter (fun before -> if String.compare before sha256 >= 0 then fail Schema) !previous;
+    previous := Some sha256;
+    Hashtbl.add registered sha256 ();
+    if string (member "mime" asset) <> "image/jpeg" then fail Schema;
+    let bytes = positive_integer (8*1024*1024) (member "bytes" asset) in
+    if bytes > 32*1024*1024 - !total_bytes then fail Limit;
+    total_bytes := !total_bytes + bytes;
+    let width = dimension (member "width" asset) and height = dimension (member "height" asset) in
+    if width > 32000000 / height then fail Limit) assets;
   let identities = Hashtbl.create 32 in
   let budget = ref 0 in
   let tick () = incr budget; if !budget>20000 then fail Limit in
@@ -222,10 +265,20 @@ let validate_schema json =
     | "unavailable" ->
       let fields = object_fields ["kind";"label"] ["kind"] json in
       Option.iter (fun value -> ignore (string value)) (List.assoc_opt "label" fields)
+    | "image" ->
+      let fields = object_fields ["kind";"sha256";"alt";"width";"height"]
+        ["kind";"sha256";"alt"] json in
+      let sha256 = digest (member "sha256" json) in
+      if not (Hashtbl.mem registered sha256) then fail Schema;
+      Hashtbl.replace used sha256 ();
+      ignore (image_alt (member "alt" json));
+      List.iter (fun key -> Option.iter (fun v -> ignore (dimension v))
+        (List.assoc_opt key fields)) ["width";"height"]
     | _ -> fail Schema in
   let roots = list (member "trees" json) in
   List.iter (tree ~top:true 0) roots;
-  roots
+  if Hashtbl.length used <> Hashtbl.length registered then fail Schema;
+  { roots; assets }
 let of_string text = protect (fun () ->
   json_preflight text;
   let json = try Yojson.Safe.from_string text with Yojson.Json_error _ -> fail Invalid_json in
@@ -469,7 +522,7 @@ let validate_graph roots =
       | "markdown" ->
         let doc = parse_chunk (string (member "text" node)) in
         inspect_references (fun id -> ignore (target id)) doc.Ir.blocks
-      | "subtree" | "unavailable" -> ()
+      | "subtree" | "unavailable" | "image" -> ()
       | _ -> fail Schema) (list (member "content" tree))) !vertices;
   let queue = Queue.create () in
   Array.iteri (fun v n -> if n=0 then Queue.add v queue) incoming;
@@ -480,7 +533,8 @@ let validate_graph roots =
       if incoming.(w)=0 then Queue.add w queue) outgoing.(v)
   done;
   if !visited <> !count then fail Cycle
-let compile_forest roots = protect (fun () ->
+let compile_forest forest = protect (fun () ->
+  let roots = forest.roots in
   validate_graph roots;
   let rec emit_tree tree =
     let header = "\\title{" ^ Forester_6.escape_literal (string (member "title" tree)) ^ "}\n" in
@@ -507,6 +561,12 @@ let compile_forest roots = protect (fun () ->
          graph routing, which can suggest another tree and removes the final
          slash. This fixed href must neither resolve nor authorize a target. *)
       "\\p{\\<html:a>[href]{/_unavailable/}{" ^ Forester_6.escape_literal label ^ "}}\n"
+    | "image" ->
+      let dimension key = match List.assoc_opt key (fields node) with
+        | None -> "" | Some value -> "[" ^ key ^ "]{" ^ string_of_int (integer value) ^ "}" in
+      "\\p{\\<html:img>[src]{/media/" ^ string (member "sha256" node) ^
+      ".jpg}[alt]{" ^ Forester_6.escape_literal (string (member "alt" node)) ^ "}" ^
+      dimension "width" ^ dimension "height" ^ "{}}\n"
     | _ -> fail Schema in
   List.sort (fun a b -> String.compare (string (member "id" a)) (string (member "id" b))) roots
   |> List.map (fun root -> (string (member "id" root) ^ ".tree", emit_tree root)))

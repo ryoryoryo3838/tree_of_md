@@ -506,6 +506,181 @@ let test_unavailable_native () =
       (Sys.file_exists (Filename.concat dir "output/_unavailable"));
     Alcotest.(check string) "native build input unchanged" before (read_text input))
 
+let jpeg_digest = "3b4f9dc01f8011ba0c41f67a7bb3b61d23d1a38cd28bc33c39fbca93e8578e80"
+let jpeg ?(sha256=jpeg_digest) ?(bytes=372) ?(width=16) ?(height=12) () =
+  obj ["sha256", `String sha256; "mime", `String "image/jpeg";
+       "bytes", `Int bytes; "width", `Int width; "height", `Int height]
+let image ?(sha256=jpeg_digest) ?(alt="") ?width ?height () =
+  obj (["kind", `String "image"; "sha256", `String sha256; "alt", `String alt] @
+    (match width with None -> [] | Some n -> ["width", `Int n]) @
+    (match height with None -> [] | Some n -> ["height", `Int n]))
+let jpeg_forest ?(assets=[jpeg ()]) content =
+  set "assets" (`List assets) (forest [tree ~id:"PUBLICA" ~content ()])
+let test_image_native_primitive () =
+  let src = "\\p{\\<html:img>[src]{/media/" ^ jpeg_digest ^ ".jpg}[alt]{}" in
+  Alcotest.(check string) "fixed native QName, empty alt, independent display dimensions"
+    ("\\title{Public title}\n" ^ src ^ "{}}\n" ^
+     src ^ "[width]{300}{}}\n" ^ src ^ "[height]{200}{}}\n" ^
+     "\\subtree[CHILD]{\n\\title{Public title}\n" ^ src ^ "[width]{300}[height]{200}{}}\n}\n")
+    (List.assoc "PUBLICA.tree" (compile (jpeg_forest
+      [image (); image ~width:300 (); image ~height:200 ();
+       subtree (tree ~id:"CHILD" ~content:[image ~width:300 ~height:200 ()] ())])))
+
+let test_image_registry_closure () =
+  let other = String.make 64 'f' in
+  expect_code "PF_SCHEMA" (jpeg_forest ~assets:[] [image ()]);
+  expect_code "PF_SCHEMA" (jpeg_forest []);
+  expect_code "PF_SCHEMA" (set "assets" (`List [jpeg ()]) (forest []));
+  expect_code "PF_SCHEMA" (jpeg_forest ~assets:[jpeg ~sha256:other ()] [image ()]);
+  expect_code "PF_SCHEMA" (jpeg_forest ~assets:[jpeg (); jpeg ()] [image ()]);
+  expect_code "PF_SCHEMA" (jpeg_forest ~assets:[jpeg ~sha256:other (); jpeg ()]
+    [image (); image ~sha256:other ()]);
+  ignore (compile (jpeg_forest ~assets:[jpeg (); jpeg ~sha256:other ()]
+    [image ~sha256:other (); subtree (tree ~content:[image (); image ()] ())]));
+  List.iter (fun sha256 ->
+    expect_code "PF_SCHEMA" (jpeg_forest ~assets:[jpeg ~sha256 ()] [image ~sha256 ()]);
+    expect_code "PF_SCHEMA" (jpeg_forest [image ~sha256 ()]))
+    [""; String.make 63 'a'; String.make 65 'a'; String.make 64 'A';
+     String.make 64 'g'; " " ^ jpeg_digest; jpeg_digest ^ " ";
+     "/media/" ^ jpeg_digest ^ ".jpg"; String.make 64 '%'; "é" ^ String.make 62 'a'];
+  List.iter (fun key ->
+    expect_code "PF_SCHEMA" (jpeg_forest [set key (`String "PRIVATE_FIELD_CANARY") (image ())]);
+    expect_code "PF_SCHEMA" (jpeg_forest ~assets:[set key (`String "PRIVATE_FIELD_CANARY") (jpeg ())] [image ()]))
+    ["src";"path";"sourcePath";"filename";"url";"style";"srcset";"onerror";"id";"provenance"];
+  List.iter (fun key -> expect_code "PF_SCHEMA" (jpeg_forest [remove key (image ())]))
+    ["kind";"sha256";"alt"];
+  List.iter (fun key -> expect_code "PF_SCHEMA" (jpeg_forest ~assets:[remove key (jpeg ())] [image ()]))
+    ["sha256";"mime";"bytes";"width";"height"];
+  expect_code "PF_SCHEMA" (jpeg_forest [obj
+    ["kind", `String "image"; "sha256", `String jpeg_digest; "alt", `String ""; "alt", `String "other"]]);
+  expect_code "PF_SCHEMA" (jpeg_forest ~assets:[obj
+    ["sha256", `String jpeg_digest; "mime", `String "image/jpeg"; "bytes", `Int 372;
+     "width", `Int 16; "height", `Int 12; "width", `Int 16]] [image ()]);
+  (* Membership is not permission to bypass the existing tree graph guards. *)
+  expect_code "PF_TARGET" (jpeg_forest [image (); transclude "MISSING"]);
+  expect_code "PF_CYCLE" (jpeg_forest [image (); transclude "PUBLICA"]);
+  List.iter (fun text -> expect_code "PF_MARKDOWN" (jpeg_forest [image (); markdown text]))
+    ["![literal](/media/" ^ jpeg_digest ^ ".jpg)";
+     "![literal](https://example.invalid/a.jpg)"; "![[photo.jpg]]";
+     "<img src='/media/x.jpg'>"; "\\<html:img>[src]{/media/x.jpg}[alt]{}{ }"]
+
+let test_image_limits () =
+  expect_code "PF_LIMIT" (jpeg_forest ~assets:[jpeg ~bytes:(8*1024*1024+1) ()] [image ()]);
+  List.iter (fun value ->
+    List.iter (fun key ->
+      expect_code "PF_SCHEMA" (jpeg_forest ~assets:[set key value (jpeg ())] [image ()]);
+      expect_code "PF_SCHEMA" (jpeg_forest [set key value (image ())])) ["width";"height"];
+    expect_code "PF_SCHEMA" (jpeg_forest ~assets:[set "bytes" value (jpeg ())] [image ()]))
+    [`Bool true; `Bool false; `Float 1.; `String "1"; `Null; `List []; obj []; `Int (-1); `Int 0];
+  List.iter (fun key ->
+    expect_code "PF_LIMIT" (jpeg_forest ~assets:[set key (`Int 8193) (jpeg ())] [image ()]);
+    expect_code "PF_LIMIT" (jpeg_forest [set key (`Int 8193) (image ())])) ["width";"height"];
+  expect_code "PF_LIMIT" (jpeg_forest ~assets:[jpeg ~width:8000 ~height:4001 ()] [image ()]);
+  ignore (compile (jpeg_forest ~assets:[jpeg ~bytes:(8*1024*1024) ~width:8000 ~height:4000 ()]
+    [image ~width:8192 ~height:8192 ()]));
+  ignore (compile (jpeg_forest ~assets:[jpeg ~bytes:1 ~width:8192 ~height:1 ()] [image ~width:1 ~height:1 ()]));
+  let many count bytes =
+    let digests = List.init count (fun n -> Printf.sprintf "%064x" n) in
+    jpeg_forest ~assets:(List.map (fun sha256 -> jpeg ~sha256 ~bytes ()) digests)
+      (List.map (fun sha256 -> image ~sha256 ()) digests) in
+  ignore (compile (many 128 1));
+  expect_code "PF_LIMIT" (many 129 1);
+  ignore (compile (many 4 (8*1024*1024)));
+  let four = List.init 4 (fun n -> Printf.sprintf "%064x" n) in
+  let five = Printf.sprintf "%064x" 4 in
+  expect_code "PF_LIMIT" (jpeg_forest
+    ~assets:(List.map (fun sha256 -> jpeg ~sha256 ~bytes:(8*1024*1024) ()) four @ [jpeg ~sha256:five ~bytes:1 ()])
+    (List.map (fun sha256 -> image ~sha256 ()) (four @ [five])));
+  (* Deduplicate byte budget, not placements; preserve the existing node cap. *)
+  ignore (compile (jpeg_forest (List.init 129 (fun _ -> image ()))));
+  expect_code "PF_LIMIT" (jpeg_forest (List.init 20000 (fun _ -> image ())))
+
+let test_image_literal_alt () =
+  expect_code "PF_LIMIT" (jpeg_forest [image ~alt:(String.make 4097 'a') ()]);
+  let contains text needle = Re.execp (Re.compile (Re.str needle)) text in
+  List.iter (fun alt ->
+    Alcotest.(check string) "literal UTF-8 bytes escaped exactly once, no Markdown/entity decoding"
+      ("\\title{Public title}\n\\p{\\<html:img>[src]{/media/" ^ jpeg_digest ^
+       ".jpg}[alt]{" ^ Forester_6.escape_literal alt ^ "}{}}\n")
+      (List.assoc "PUBLICA.tree" (compile (jpeg_forest [image ~alt ()]))))
+    [""; "  公開写真 🙂  "; "é"; "[](){}$#% <> & \" ' &amp; &#91; FMD";
+     "<script>alert(1)</script>"; String.make 4096 'a';
+     String.concat "" (List.init 1365 (fun _ -> "写")) ^ "a";
+     String.concat "" (List.init 1024 (fun _ -> "🙂"))];
+  List.iter (fun alt -> expect_code "PF_LIMIT" (jpeg_forest [image ~alt ()]))
+    [String.concat "" (List.init 1365 (fun _ -> "写")) ^ "aa";
+     String.concat "" (List.init 1024 (fun _ -> "🙂")) ^ "a"];
+  List.iter (fun n ->
+    let control = if n<128 then String.make 1 (Char.chr n)
+      else "\194" ^ String.make 1 (Char.chr n) in
+    expect_code "PF_SCHEMA" (jpeg_forest [image ~alt:("bad" ^ control ^ "alt") ()]))
+    (List.init 32 Fun.id @ List.init 33 (fun n -> 127+n));
+  List.iter (fun alt -> expect_code "PF_SCHEMA" (jpeg_forest [image ~alt ()]))
+    ["%%p%%"; "\\{raw}"; "#{raw}"; "\\title{injected}"; "\\<html:img>";
+     "[[LOCAL]]"; "![[photo.jpg]]"; "<!-- private -->"];
+  List.iter (fun value -> expect_code "PF_SCHEMA" (jpeg_forest [set "alt" value (image ())]))
+    [`Null; `Bool false; `Int 0; `List []; obj []];
+  expect_code "PF_JSON" (jpeg_forest [image ~alt:(String.make 1 (Char.chr 255)) ()]);
+  let escaped = List.assoc "PUBLICA.tree" (compile (jpeg_forest [image ~alt:"{literal}" ()])) in
+  Alcotest.(check bool) "literal brace herald not escaped twice" true (contains escaped "\\verbFMD|{FMD")
+
+let test_image_cli () = with_temp (fun dir ->
+  let input = Filename.concat dir "public.json" and log = Filename.concat dir "log" in
+  let output = Filename.concat dir "no/trees" in
+  List.iter (fun (code,value) ->
+    write_text input (Yojson.Safe.to_string value);
+    let before = read_text input and stat = Unix.stat input in
+    Alcotest.(check int) "actual JPEG CLI rejection" 1
+      (run_cli ["--public-forest";input;"--out-dir";output] log);
+    Alcotest.(check string) "generic source-free code only" (code ^ "\n") (read_text log);
+    Alcotest.(check bool) "reject before mkdir" false (Sys.file_exists (Filename.dirname output));
+    Alcotest.(check string) "input bytes preserved" before (read_text input);
+    Alcotest.(check (float 0.)) "input mtime preserved" stat.Unix.st_mtime (Unix.stat input).Unix.st_mtime)
+    ["PF_SCHEMA", jpeg_forest ~assets:[] [image ()];
+     "PF_SCHEMA", jpeg_forest [set "src" (`String "PRIVATE_PATH_CANARY") (image ())];
+     "PF_LIMIT", jpeg_forest [image ~width:8193 ()];
+     "PF_SCHEMA", jpeg_forest [image ~alt:"bad\nalt" ()]];
+  let good = jpeg_forest [image ~alt:"Literal {photo}" (); image ()] in
+  write_text input (Yojson.Safe.to_string good);
+  Alcotest.(check int) "actual JPEG CLI succeeds without any JPEG file" 0
+    (run_cli ["--public-forest";input;"--out-dir";output] log);
+  Alcotest.(check string) "only root count, not asset count" "PF_OK 1\n" (read_text log);
+  Alcotest.(check (list string)) "consumer writes trees only, never media"
+    ["PUBLICA.tree"] (Array.to_list (Sys.readdir output));
+  Alcotest.(check string) "exact compiled image bytes" (List.assoc "PUBLICA.tree" (compile good))
+    (read_text (Filename.concat output "PUBLICA.tree")))
+
+let test_image_native () =
+  match Sys.getenv_opt "PUBLIC_FOREST_TEST_FORESTER" with
+  | None -> ()
+  | Some forester -> with_temp (fun dir ->
+    let alt = "公開写真 🙂 {A} [B](C) # % &amp; &#91; <script> \" ' FMD" in
+    List.iter (fun (name,flag,extension) ->
+      let work = Filename.concat dir name in Unix.mkdir work 0o700;
+      let input = Filename.concat work "public.json" and log = Filename.concat work "log" in
+      let output = Filename.concat work "trees" in
+      write_text input (Yojson.Safe.to_string (jpeg_forest [image ~alt ~width:30 ~height:20 (); image ()]));
+      Alcotest.(check int) "actual source CLI" 0
+        (run_cli ["--public-forest";input;"--out-dir";output] log);
+      write_text (Filename.concat work "forest.toml")
+        "[forest]\ntrees = [\"trees\"]\nassets = []\nhome = \"PUBLICA\"\nurl = \"https://example.invalid/\"\n";
+      Alcotest.(check int) "fixed native image build, native assets empty" 0
+        (Sys.command ("cd " ^ Filename.quote work ^ " && " ^ Filename.quote forester ^
+          " build --no-theme " ^ flag ^ " forest.toml > " ^ Filename.quote log ^ " 2>&1"));
+      let result = read_text (Filename.concat work ("output/PUBLICA/index." ^ extension)) in
+      let has needle = Re.execp (Re.compile (Re.str needle)) result in
+      Alcotest.(check bool) "src never enters URI routing" true (has ("src=\"/media/" ^ jpeg_digest ^ ".jpg\""));
+      Alcotest.(check bool) "literal alt preserved, no entity decoding or injected script" true
+        (has "公開写真 🙂 {A} [B](C) # % &amp;amp; &amp;#91; &lt;script&gt;");
+      Alcotest.(check bool) "authored display dimensions retained" true (has "width=\"30\" height=\"20\"");
+      Alcotest.(check bool) "empty alt is present (HTML may minimize it)" true
+        (has (if name="html" then " alt>" else " alt=\"\""));
+      Alcotest.(check bool) "native never copies media" false
+        (Sys.file_exists (Filename.concat work "output/media"));
+      Alcotest.(check bool) "image digest never becomes a named route" false
+        (Sys.file_exists (Filename.concat work ("output/" ^ jpeg_digest))))
+      ["html", "", "html"; "xml", "--emit-legacy-xml", "xml"])
+
 let () = Alcotest.run "Public_forest"
   ["public-v2", [Alcotest.test_case "literal root and isolated Markdown" `Quick test_basic;
     Alcotest.test_case "exact schema rejects unknown keys and types" `Quick test_schema;
@@ -530,4 +705,10 @@ let () = Alcotest.run "Public_forest"
     Alcotest.test_case "unavailable semantic literal label and closed validation" `Quick test_unavailable_literal_label;
     Alcotest.test_case "unavailable keeps dangling/raw/graph guards closed" `Quick test_unavailable_guard_regression;
     Alcotest.test_case "unavailable actual CLI refusal before writes" `Quick test_unavailable_cli;
-    Alcotest.test_case "unavailable exact href and literal label in native HTML" `Quick test_unavailable_native]]
+    Alcotest.test_case "unavailable exact href and literal label in native HTML" `Quick test_unavailable_native];
+   "public-jpeg", [Alcotest.test_case "fixed native image primitive, empty alt and display dimensions" `Quick test_image_native_primitive;
+    Alcotest.test_case "closed exact used registry, digest spelling and unchanged guards" `Quick test_image_registry_closure;
+    Alcotest.test_case "JPEG integer byte pixel count and display limits" `Quick test_image_limits;
+    Alcotest.test_case "literal alt UTF-8 bytes, no controls or local directives" `Quick test_image_literal_alt;
+    Alcotest.test_case "actual JPEG CLI refuses before mkdir and writes trees only" `Quick test_image_cli;
+    Alcotest.test_case "actual image CLI to fixed native HTML and XML" `Quick test_image_native]]
