@@ -395,8 +395,15 @@ let validate_blocks blocks =
     | Ir.Footnotes entries -> List.iter (fun (_,bs) -> List.iter block bs) entries
     | Ir.Display_math tex -> safe_tex tex
     | Ir.Code_block _ | Ir.Thematic_break -> ()
+    | Ir.Card_link card ->
+      (* Only the link and its literal text are public; remote images are
+         stripped by [strip_card_media], never fetched by a reader. *)
+      if not (safe_http card.Ir.card_url) then fail Unsafe_markdown;
+      List.iter (fun text ->
+        if List.exists (contains text) ["[[";"]]";"%%";"<!--";"\\{"] then fail Unsafe_markdown)
+        (card.Ir.card_title :: Option.to_list card.Ir.card_description @ Option.to_list card.Ir.card_host)
     | Ir.Heading _ | Ir.Subtree_directive _ | Ir.Subtree_open _ | Ir.Subtree_close _
-    | Ir.Block_embed _ | Ir.Card_link _ | Ir.Footnote_def _ -> fail Unsafe_markdown in
+    | Ir.Block_embed _ | Ir.Footnote_def _ -> fail Unsafe_markdown in
   List.iter block blocks
 let decode_literal_label label =
   let buffer=Buffer.create (String.length label) in
@@ -442,6 +449,17 @@ let decode_labels blocks =
       | node -> node in
     {b with Ir.bnode} in
   List.map block blocks
+let strip_card_media blocks =
+  let rec block b =
+    let bnode=match b.Ir.bnode with
+      | Ir.Card_link card -> Ir.Card_link {card with Ir.card_image=None; card_favicon=None}
+      | Ir.Blockquote bs -> Ir.Blockquote (List.map block bs)
+      | Ir.List xs -> Ir.List {xs with items=List.map (fun i -> {i with Ir.item_blocks=List.map block i.Ir.item_blocks}) xs.items}
+      | Ir.Callout xs -> Ir.Callout {xs with body=List.map block xs.body}
+      | Ir.Footnotes xs -> Ir.Footnotes (List.map (fun (n,bs) -> n,List.map block bs) xs)
+      | node -> node in
+    {b with Ir.bnode} in
+  List.map block blocks
 let parse_chunk text =
   String.iteri (fun i c -> if c='\r' && (i+1=String.length text || text.[i+1]<>'\n')
     then fail Unsafe_markdown) text;
@@ -452,7 +470,7 @@ let parse_chunk text =
   | Error _ -> fail Unsafe_markdown
   | Ok (doc, warnings) ->
     if warnings <> [] then fail Unsafe_markdown;
-    validate_blocks doc.Ir.blocks; {doc with Ir.blocks=decode_labels doc.Ir.blocks}
+    validate_blocks doc.Ir.blocks; {doc with Ir.blocks=strip_card_media (decode_labels doc.Ir.blocks)}
 let fields = function `Assoc xs -> xs | _ -> fail Schema
 let optional key json = Option.map string (List.assoc_opt key (fields json))
 let synthetic_span = match Span.make ~path:"<public>" ~start_byte:0 ~end_byte:0 with

@@ -149,7 +149,6 @@ let test_markdown_boundary () =
      "[[ISLAND|label\nbroken]]"; "[[ISLAND|label"; "[[ISLAND|label]]]]";
      "body ^HIDDEN"; "^HIDDEN"; "[unused]: private-file.md";
      "![asset](https://example.test/public.png)"; "[file](../private.md)";
-     "```cardlink\nurl: https://example.test/\ntitle: card\n```";
      "$}\\title{injected}{$"; "$\\title{injected}$"; "$\\includegraphics{x}$"]
 let test_protected_examples () =
   let text = "`## example ![[MISSING]] %%p%% \\title{x}`\n\n" ^
@@ -681,6 +680,22 @@ let test_image_native () =
         (Sys.file_exists (Filename.concat work ("output/" ^ jpeg_digest))))
       ["html", "", "html"; "xml", "--emit-legacy-xml", "xml"])
 
+let card_chunk ?(url="https://example.org/page") ?(title="A public page") extra =
+  "```cardlink\nurl: " ^ url ^ "\ntitle: \"" ^ title ^ "\"\n" ^ extra ^ "```"
+let test_card_link () =
+  let card extra = forest [tree ~id:"PUBLICA" ~content:[markdown (card_chunk extra)] ()] in
+  let out = List.assoc "PUBLICA.tree" (compile (card
+    "description: \"Described\"\nhost: example.org\nimage: https://tracker.invalid/CANARY.jpg\nfavicon: https://tracker.invalid/CANARY.ico\n")) in
+  List.iter (fun expected -> Alcotest.(check bool) ("card keeps " ^ expected) true
+    (Re.execp (Re.compile (Re.str expected)) out)) ["https://example.org/page"; "A public page"; "Described"];
+  Alcotest.(check bool) "remote card media are never emitted" false
+    (Re.execp (Re.compile (Re.alt [Re.str "CANARY"; Re.str "tracker.invalid"; Re.str "html:img"])) out);
+  List.iter (fun json -> expect_code "PF_MARKDOWN" json)
+    [forest [tree ~id:"PUBLICA" ~content:[markdown (card_chunk ~url:"javascript:alert(1)" "")] ()];
+     forest [tree ~id:"PUBLICA" ~content:[markdown (card_chunk ~url:"PUBLICA" "")] ()];
+     forest [tree ~id:"PUBLICA" ~content:[markdown (card_chunk ~title:"[[PRIVATE]]" "")] ()];
+     forest [tree ~id:"PUBLICA" ~content:[markdown (card_chunk "description: \"%%p%%\"\n")] ()]]
+
 let () = Alcotest.run "Public_forest"
   ["public-v2", [Alcotest.test_case "literal root and isolated Markdown" `Quick test_basic;
     Alcotest.test_case "exact schema rejects unknown keys and types" `Quick test_schema;
@@ -711,4 +726,5 @@ let () = Alcotest.run "Public_forest"
     Alcotest.test_case "JPEG integer byte pixel count and display limits" `Quick test_image_limits;
     Alcotest.test_case "literal alt UTF-8 bytes, no controls or local directives" `Quick test_image_literal_alt;
     Alcotest.test_case "actual JPEG CLI refuses before mkdir and writes trees only" `Quick test_image_cli;
-    Alcotest.test_case "actual image CLI to fixed native HTML and XML" `Quick test_image_native]]
+    Alcotest.test_case "actual image CLI to fixed native HTML and XML" `Quick test_image_native];
+   "public-card", [Alcotest.test_case "link cards keep safe link text and drop remote media" `Quick test_card_link]]
