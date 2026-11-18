@@ -1,6 +1,6 @@
-# tree-md Dependency Audit
+# tree_of_md Dependency Audit
 
-This file records the complete resolved dependency closure of the `tree-md`
+This file records the complete resolved dependency closure of the `tree_of_md`
 package and the license audit that justifies the project's own
 [MIT `LICENSE`](./LICENSE).
 
@@ -14,7 +14,7 @@ ls dune.lock/*.pkg     # the resolved package set
 ```
 
 The audit classifies every package as **runtime** (linked into the shipped
-`tree-md` binary), **test** (linked only into the test executables), **build**
+`tree_of_md` binary), **test** (linked only into the test executables), **build**
 (run at build time, never linked into compiler outputs), or **compiler/stdlib**
 (the OCaml toolchain itself). Classification was verified against the actual
 dune link closure (`lib/dune` libraries and `ocamlobjinfo` on the built
@@ -68,7 +68,7 @@ which is the same footing the compiler's own runtime stands on.
 
 ## Runtime-linked closure
 
-Packages linked into the shipped `tree-md` binary. Verified via the `tree_md`
+Packages linked into the shipped `tree_of_md` binary. Verified via the `tree_of_md`
 library stanza (`cmarkit yaml unix otoml digestif yojson cmdliner`) and
 `ocamlobjinfo` on `_build/default/bin/main.exe`.
 
@@ -116,7 +116,7 @@ Linked only into the Alcotest/cram test executables; never shipped.
 
 | Package | Resolved version | License | Source | Required by |
 | --- | --- | --- | --- | --- |
-| alcotest | 1.9.1 | ISC | https://github.com/mirage/alcotest/releases/download/1.9.1/alcotest-1.9.1.tbz | tree-md (test) |
+| alcotest | 1.9.1 | ISC | https://github.com/mirage/alcotest/releases/download/1.9.1/alcotest-1.9.1.tbz | tree_of_md (test) |
 | astring | 0.8.5 | ISC | https://erratique.ch/software/astring/releases/astring-0.8.5.tbz | alcotest, bos |
 | fmt | 0.11.0 | ISC | https://erratique.ch/software/fmt/releases/fmt-0.11.0.tbz | alcotest, bos |
 | logs | 0.10.0 | ISC | https://erratique.ch/software/logs/releases/logs-0.10.0.tbz | alcotest, bos |
@@ -161,7 +161,7 @@ tool exists; it compiles nothing and links nothing.
 ## Installed but not linked into compiler outputs
 
 None of the packages below is in `dune.lock/`. They come from the
-`opam list --installed --required-by tree-md --recursive` query run in the
+`opam list --installed --required-by tree_of_md_legacy --recursive` query run in the
 shared development switch, where they are installed as dependencies of other
 projects in that switch or of uutf's own development suite. They are recorded
 because that query was the audit's original source and because none of them
@@ -177,7 +177,7 @@ carries a non-exception copyleft license either way.
 | uchar | 0.0.2 | LGPL-2.1-only WITH OCaml-LGPL-linking-exception | https://github.com/ocaml/uchar/releases/download/v0.0.2/uchar-0.0.2.tbz |
 
 `uchar` is a development dependency of `uutf`; the installed `uutf` library
-declares an empty runtime `requires` and tree-md does not link it. `sexplib`,
+declares an empty runtime `requires` and tree_of_md does not link it. `sexplib`,
 `parsexp`, `num`, and `cstruct` belong to other installed projects in the
 shared switch. All carry permissive licenses or the OCaml linking exception.
 
@@ -190,7 +190,7 @@ pinned to OCaml 5.3.0 by the `(constraints ...)` stanza in
 compiler, so it can recreate this build environment on another host without an
 opam switch.
 
-Note that [`tree-md.opam`](./tree-md.opam) declares **lower bounds** (`>=`),
+Note that [`tree_of_md.opam`](./tree_of_md.opam) declares **lower bounds** (`>=`),
 which express the supported version range for publication, while `dune.lock/`
 carries the exact pins. The two therefore differ by design: a `>=` constraint in
 the opam file is not a loosened pin.
@@ -199,7 +199,7 @@ A second lockfile, `tree-md.opam.locked`, previously recorded a snapshot of an
 `opam`-managed development switch. It was removed because it duplicated
 `dune.lock/` while drifting out of step with it, which made it ambiguous which
 file was authoritative. Recover it from git history if an opam-native lock is
-ever wanted, and regenerate it with `opam lock tree-md.opam` rather than reusing
+ever wanted, and regenerate it with `opam lock tree_of_md.opam` rather than reusing
 the stale copy.
 
 The resolved versions in the tables above are the ones `dune.lock/` currently

@@ -5,7 +5,7 @@
    explicit that front matter is an arbitrary mapping, so a key this compiler
    has no use for is carried rather than rejected.
 
-   Interpretation is a separate pass: Metadata.of_yaml reads the keys tree-md
+   Interpretation is a separate pass: Metadata.of_yaml reads the keys tree_of_md
    emits out of that mapping, and it happens in the compiler, where the
    collection's own settings are known. *)
 type t = {

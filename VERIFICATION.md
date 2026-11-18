@@ -1,6 +1,6 @@
-# tree-md Verification Matrix
+# tree_of_md Verification Matrix
 
-This file maps every design requirement of the tree-md compiler to an exact
+This file maps every design requirement of the tree_of_md compiler to an exact
 test executable, cram scenario, or compatibility-fixture assertion. It is the
 acceptance record for the implementation.
 
@@ -39,13 +39,13 @@ plus the `test/fixtures/compat` fixture.
 ### Configuration (lines 171–196)
 
 `mdbase.yaml` is covered under mdbase conformance above; the table below is
-`tree-md.toml`.
+`tree_of_md.toml`.
 
 | Requirement | Test |
 | --- | --- |
 | `version`/`forest`/`sources`/`output`/`target` schema, required fields | `config_test.ml` (`missing_field`, `unknown_field`, `wrong_version`, `unsupported_target`) |
-| `--config PATH`; default exactly `./tree-md.toml`, no parent search | `cli.t/run.t` (default-config scenario, `TM401` when ancestor config is absent) |
-| Paths relative to `tree-md.toml` directory; `forest.toml` paths relative to `forest.toml` | `config_test.ml` (`valid_path_bases`, `valid_nested_forest_path_bases`, `relative_operations`) |
+| `--config PATH`; default exactly `./tree_of_md.toml`, no parent search | `cli.t/run.t` (default-config scenario, `TM401` when ancestor config is absent) |
+| Paths relative to `tree_of_md.toml` directory; `forest.toml` paths relative to `forest.toml` | `config_test.ml` (`valid_path_bases`, `valid_nested_forest_path_bases`, `relative_operations`) |
 | Distinct source roots; output not overlapping a source root | `config_test.ml` (`duplicate_source_root`, `source_output_overlap`) |
 | Absolute/empty/`.`/`..` path rejection; output in `[forest].trees` | `config_test.ml` (`absolute_path`, `empty_segment`, `dot_segment`, `dot_dot_segment`, `backslash_path`, `output_absent_from_forest_trees`) |
 | `[id]` policy: defaults follow Forester's convention, overrides load, unusable alphabets/prefixes rejected | `config_test.ml` (`id_defaults`, `id_overrides`, `id_rejects_unusable_policy`) |
@@ -167,7 +167,7 @@ plus the `test/fixtures/compat` fixture.
 | §07 regular-expression subset: no backreferences, no look-around | `json_schema_test.ml` (`unsupported_regex_refused`) |
 | §05 type files load; names conflict case-insensitively | `mdbase_type_test.ml` (`minimal_type_loads`, `duplicate_names_conflict`) |
 | §02 a non-type file under the types folder warns and is never a record | `mdbase_type_test.ml` (`non_type_file_warns`) |
-| A section tree-md does not act on is refused, not ignored | `mdbase_type_test.ml` (`unsupported_sections_refused`, `unsupported_collection_members_refused`, `match_expr_refused`) |
+| A section tree_of_md does not act on is refused, not ignored | `mdbase_type_test.ml` (`unsupported_sections_refused`, `unsupported_collection_members_refused`, `match_expr_refused`) |
 | §07 selection: explicit declaration completes it; inferred rules otherwise | `mdbase_type_test.ml` (`explicit_declaration_wins`, `path_glob_selects`, `fields_present_and_where`) |
 | §07 `read_defaults` fill only missing keys; explicit null stays null | `yaml_json_test.ml` (`defaults_fill_only_missing`); `mdbase_type_test.ml` (`read_defaults`); `cli.t/run.t` |
 | Schema issues are reported at `settings.validation`'s severity, with a span and mdbase's code | `cli.t/run.t` (the mdbase scenario) |
@@ -256,8 +256,8 @@ plus the `test/fixtures/compat` fixture.
 | --- | --- |
 | Manifest schema (format 2, compiler 0.1.0, target, files, sorted entries, 64-hex SHA-256) | `manifest_test.ml` (`canonical_schema`, `canonical_empty`, `canonical_sorted_entries`, `round_trip`, `decode_sorts`); `TM402` |
 | Every managed path is relative to the configuration's own directory, so one manifest owns trees and attachment copies; a format 1 manifest is lifted, not rejected | `manifest_test.ml` (`formats`, `attachment_entry`, `format_1_lifted`); `workspace_test.ml` (`attachments`) |
-| Malformed JSON / unknown fields / wrong types / duplicate / bad hash / non-normalized paths rejected | `manifest_test.ml` (`malformed_json`, `unknown_field`, `entry_unknown_field`, `duplicate_field`, `duplicate_source`, `duplicate_output`, `short_hash`, `uppercase_hash`, `hash_wrong_type`, `format_3`, `absolute_path`, `dot_and_dotdot_path`, `tree_md_component`); `TM402` |
-| Output-root reserved names (`manifest`, `transaction`, `lock`, `stage`) | `manifest_test.ml` (`tree_md_component`) |
+| Malformed JSON / unknown fields / wrong types / duplicate / bad hash / non-normalized paths rejected | `manifest_test.ml` (`malformed_json`, `unknown_field`, `entry_unknown_field`, `duplicate_field`, `duplicate_source`, `duplicate_output`, `short_hash`, `uppercase_hash`, `hash_wrong_type`, `format_3`, `absolute_path`, `dot_and_dotdot_path`, `tree_of_md_component`); `TM402` |
+| Output-root reserved names (`manifest`, `transaction`, `lock`, `stage`) | `manifest_test.ml` (`tree_of_md_component`) |
 | Only `build` takes the exclusive lock; validation before lock | `workspace_fs_test.ml` (`lock`, `contention`, `cross_process`); `workspace_test.ml` (`build_concurrency`) |
 | `check` never creates/locks; read-only lock test; active writer → exit 2; state-digest double check | `workspace_test.ml` (`check_concurrency`, `active_writer_tm404`, `first_check_missing_no_writes`); `cli_test.ml` |
 | Unknown files never deleted; unknown file at expected output → failure | `workspace_test.ml` (`unknown_collision_rejected`); `TM304` |
@@ -279,7 +279,7 @@ plus the `test/fixtures/compat` fixture.
 | `check` same pipeline without writing; missing/modified/stale/colliding outputs as errors | `workspace_test.ml` (`check_lifecycle` 0–10); `cli.t/run.t` (`TM301`, `TM302` scenarios) |
 | Exit 0 / 1 / 2 semantics, worst-wins | `cli_test.ml` (`exit codes` 0–11: success, source, semantic, state, config, manifest, journal, io, internal, worst wins, all class one, all class two) |
 | Usage errors (missing/unknown command, unknown option) exit 2 | `cli.t/run.t` (three usage scenarios); `aae8d20` pinned behavior |
-| Backtrace hidden by default, shown with `TREE_MD_BACKTRACE=1`, `Out_of_memory`/`Sys.Break` re-raised | `cli_test.ml` (`exception filter` 0–3) |
+| Backtrace hidden by default, shown with `TREE_OF_MD_BACKTRACE=1`, `Out_of_memory`/`Sys.Break` re-raised | `cli_test.ml` (`exception filter` 0–3) |
 | `build`/`check` stdout/stderr contract | `cli.t/run.t` (summary line, silent clean check, stderr diagnostics) |
 | `--version` prints the package version; `--help` documents the commands and exit codes, asserted as `--help=plain` so the recorded output does not depend on whether groff and a pager are present | `cli.t/run.t` (`--version`, `--help=plain`) |
 
@@ -422,7 +422,7 @@ of every profile form, the no-warning constraint) are covered locally by
 ## Dependencies and Licensing
 
 Covered by [`DEPENDENCIES.md`](./DEPENDENCIES.md): the resolved closure from
-`opam list --installed --required-by tree-md --recursive`, per-package license
+`opam list --installed --required-by tree_of_md_legacy --recursive`, per-package license
 expressions from `opam show`, source URLs, runtime/build/test classification,
 and the explicit confirmation that no linked dependency is AGPL/GPL/plain-LGPL
 (any LGPL-expression linked package carries the `OCaml-LGPL-linking-exception`;

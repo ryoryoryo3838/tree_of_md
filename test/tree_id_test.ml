@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 let policy ?(alphabet = Config.default_id_policy.Config.alphabet)
     ?(width = 4) ?(prefix = "") () =

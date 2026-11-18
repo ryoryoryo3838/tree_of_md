@@ -1,9 +1,9 @@
 # Public-v2 JSON bridge (local, not publication authorization)
 
 The new canonical command is **`tree_of_md`** (underscore). The package and
-repository remain `tree-md`; `Tree_md`, the old `tree-md` executable, and its
-configuration are retained for legacy consumers. No package/version rename is
-required. This path never reads a vault or runs the legacy discovery, publication
+repository are also `tree_of_md`; the older Markdown compiler is kept for legacy
+consumers as the `tree_of_md_legacy` executable and the `tree_of_md.legacy`
+library (`Tree_of_md_legacy`). This path never reads a vault or runs the legacy discovery, publication
 selection, or attachment-copy pipeline.
 
 ```sh
@@ -12,7 +12,7 @@ devbox run -- dune exec tree_of_md -- \
   --public-forest approved-public-v2.json --out-dir fresh-trees
 ```
 
-The installed library façade is `tree-md.tree_of_md`:
+The installed library façade is `tree_of_md`:
 
 ```ocaml
 module Public = Tree_of_md.Public_forest

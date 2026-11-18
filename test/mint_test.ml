@@ -1,7 +1,7 @@
-open Tree_md
+open Tree_of_md_legacy
 
 let with_dir f =
-  let root = Filename.temp_file "tree-md-mint-" ".dir" in
+  let root = Filename.temp_file "tree_of_md-mint-" ".dir" in
   Sys.remove root;
   Unix.mkdir root 0o700;
   let rec remove path =
@@ -23,7 +23,7 @@ let read path = In_channel.with_open_bin path In_channel.input_all
 let relative value = Result.get_ok (Path_safe.relative value)
 
 let config root =
-  { Config.path = Filename.concat root "tree-md.toml";
+  { Config.path = Filename.concat root "tree_of_md.toml";
     directory = root;
     forest =
       { Config.path = Filename.concat root "forest.toml";

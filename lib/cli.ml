@@ -2,9 +2,9 @@
    filter. The approved plan (Task 17) fixes the command interface, the
    exit-code mapping (0 none, 1 source/semantic/state diagnostics, 2
    usage/config/manifest/journal/I/O/internal), and backtrace gating on
-   TREE_MD_BACKTRACE=1. *)
+   TREE_OF_MD_BACKTRACE=1. *)
 
-let config_default = "./tree-md.toml"
+let config_default = "./tree_of_md.toml"
 
 (* Exit class of a stable diagnostic code: 1 for source, semantic,
    forest-consistency, and generated-state codes; 2 for configuration,
@@ -106,7 +106,7 @@ let print_build_summary (summary : Workspace.summary) =
 
    render_unexpected is the filter at the CLI boundary: an unexpected
    exception becomes a one-line message (plus a backtrace section only
-   when TREE_MD_BACKTRACE=1) and exit code 2. Out_of_memory and
+   when TREE_OF_MD_BACKTRACE=1) and exit code 2. Out_of_memory and
    Sys.Break are not ordinary diagnostics and are re-raised unchanged. *)
 
 let render_unexpected ~backtrace_enabled exn backtrace =
@@ -114,7 +114,7 @@ let render_unexpected ~backtrace_enabled exn backtrace =
   | Out_of_memory | Sys.Break -> raise exn
   | _ ->
     let buffer = Buffer.create 128 in
-    Buffer.add_string buffer "tree-md: internal error: ";
+    Buffer.add_string buffer "tree_of_md: internal error: ";
     Buffer.add_string buffer (Printexc.to_string exn);
     Buffer.add_char buffer '\n';
     if backtrace_enabled then begin
@@ -128,7 +128,7 @@ module For_test = struct
 end
 
 let backtrace_enabled () =
-  Sys.getenv_opt "TREE_MD_BACKTRACE" = Some "1"
+  Sys.getenv_opt "TREE_OF_MD_BACKTRACE" = Some "1"
 
 let guard f =
   try f () with
@@ -164,7 +164,7 @@ let run_build config_path =
 (* ── Cmdliner terms ── *)
 
 let config_arg =
-  let doc = "Path to the configuration file (default: ./tree-md.toml)." in
+  let doc = "Path to the configuration file (default: ./tree_of_md.toml)." in
   Cmdliner.Arg.(value & opt string config_default & info ["config"]
                   ~docv:"PATH" ~doc)
 
@@ -182,7 +182,7 @@ let build_command =
 
 let command =
   Cmdliner.Cmd.group
-    (Cmdliner.Cmd.info "tree-md"
+    (Cmdliner.Cmd.info "tree_of_md_legacy"
        ~version:Version.current
        ~doc:"Compile strict Markdown into Forester tree source."
        ~exits:

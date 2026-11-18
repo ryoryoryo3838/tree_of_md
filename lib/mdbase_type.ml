@@ -42,21 +42,21 @@ let supported_sections = [ "kind"; "name"; "version"; "match"; "schema"; "collec
 (* Declared by §05 but not acted on here. Refused rather than accepted, so a
    type file cannot claim a constraint nothing enforces. *)
 let unsupported_sections =
-  [ ("lifecycle", "tree-md mints addresses from the [id] policy in tree-md.toml");
-    ("runtime", "tree-md runs no workflows");
-    ("migrations", "tree-md does not migrate records");
-    ("implements", "tree-md loads no data contracts") ]
+  [ ("lifecycle", "tree_of_md mints addresses from the [id] policy in tree_of_md.toml");
+    ("runtime", "tree_of_md runs no workflows");
+    ("migrations", "tree_of_md does not migrate records");
+    ("implements", "tree_of_md loads no data contracts") ]
 
 let supported_match_members = [ "path_glob"; "fields_present"; "where" ]
 let supported_collection_members = [ "read_defaults"; "display" ]
 
 let unsupported_collection_members =
-  [ ("unique", "tree-md enforces address uniqueness across the whole forest \
+  [ ("unique", "tree_of_md enforces address uniqueness across the whole forest \
                 itself, and reports a clash as TM201");
-    ("links", "tree-md resolves every reference closed-world already, and \
+    ("links", "tree_of_md resolves every reference closed-world already, and \
                reports an unresolved one as TM202");
-    ("path", "tree-md names an output after the tree's address");
-    ("projections", "projections need the CEL profile, which tree-md does not \
+    ("path", "tree_of_md names an output after the tree's address");
+    ("projections", "projections need the CEL profile, which tree_of_md does not \
                      implement") ]
 
 (* ── reading a type file ── *)
@@ -143,7 +143,7 @@ let parse_match ~path node =
        Error
          [ diagnostic ~mdbase_code:"unsupported_profile" TM401 path
              "match.expr needs the cel_match conformance profile, which \
-              tree-md does not implement" ]
+              tree_of_md does not implement" ]
      | (other, _) :: _ ->
        Error
          [ diagnostic TM401 path ("unknown match member \"" ^ other ^ "\"") ]
@@ -191,7 +191,7 @@ let parse_collection ~path node =
      | Some (name, why) ->
        Error
          [ diagnostic ~mdbase_code:"unsupported_profile" TM401 path
-             ("collection." ^ name ^ " is not enforced by tree-md: " ^ why) ]
+             ("collection." ^ name ^ " is not enforced by tree_of_md: " ^ why) ]
      | None ->
        let unknown =
          List.find_opt
@@ -305,7 +305,7 @@ let parse_type_file ~root ~path contents =
           | Some (section, why) ->
             Error
               [ diagnostic ~mdbase_code:"unsupported_profile" TM401 path
-                  (section ^ " is not acted on by tree-md: " ^ why) ]
+                  (section ^ " is not acted on by tree_of_md: " ^ why) ]
           | None -> (
             let unknown =
               List.find_opt

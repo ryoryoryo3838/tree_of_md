@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 let relative value =
   match Path_safe.relative value with
@@ -34,7 +34,7 @@ let make_config ~root ~sources ~tree_roots ~asset_roots ~output =
     List.map (fun name -> (relative name, resolve root name)) names
   in
   ({
-     Config.path = Filename.concat root "tree-md.toml";
+     Config.path = Filename.concat root "tree_of_md.toml";
      directory = root;
      forest = {
        path = Filename.concat root "forest.toml";
@@ -51,7 +51,7 @@ let make_config ~root ~sources ~tree_roots ~asset_roots ~output =
    } : Config.t)
 
 let with_fixture f =
-  let root = Filename.temp_file "tree-md-discovery-" ".dir" in
+  let root = Filename.temp_file "tree_of_md-discovery-" ".dir" in
   Sys.remove root;
   Unix.mkdir root 0o700;
   let rec remove path =

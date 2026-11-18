@@ -1,7 +1,7 @@
-open Tree_md
+open Tree_of_md_legacy
 
 let with_directory f =
-  let root = Filename.temp_file "tree-md-mdbase" "" in
+  let root = Filename.temp_file "tree_of_md-mdbase" "" in
   Sys.remove root;
   Unix.mkdir root 0o700;
   let root = Unix.realpath root in
@@ -44,7 +44,7 @@ let contains haystack needle =
   in
   loop 0
 
-(* A forest with no mdbase.yaml is an ordinary forest: everything tree-md did
+(* A forest with no mdbase.yaml is an ordinary forest: everything tree_of_md did
    before the file existed still works, on the defaults. *)
 let test_absent_file_is_the_defaults () =
   with_directory (fun root ->

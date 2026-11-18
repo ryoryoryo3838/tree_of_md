@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 (* Each compile stage now returns its warnings alongside the value it
    produced. These suites assert on the value, so they drop the warnings. *)
@@ -27,7 +27,7 @@ let read_fixture path =
 let resolve_fixture_path relative =
   let sandbox_path = Filename.concat "fixtures" relative in
   if Sys.file_exists sandbox_path then sandbox_path
-  else Filename.concat "tools/tree-md/test/fixtures" relative
+  else Filename.concat "tools/tree_of_md/test/fixtures" relative
 
 let source_from_string text =
   match Source.of_string ~path:"test.md" text with

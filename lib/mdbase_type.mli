@@ -3,7 +3,7 @@
 
    What a type buys a forest is that the shape its front matter must have is
    *declared in the collection*, in the file every other mdbase tool reads,
-   instead of being wired into this compiler. tree-md's own reading of the keys
+   instead of being wired into this compiler. tree_of_md's own reading of the keys
    it emits — `id`, `date`, `taxon`, `authors`, `tags`, `meta` — is a separate
    concern and continues either way: those are about what it can put into a
    `.tree`, not about what the collection considers a valid record.

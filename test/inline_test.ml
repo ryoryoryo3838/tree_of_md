@@ -1,51 +1,51 @@
 let source_from_string text =
-  Result.get_ok (Tree_md.Source.of_string ~path:"test.md" text)
+  Result.get_ok (Tree_of_md_legacy.Source.of_string ~path:"test.md" text)
 
 (* Each compile stage now returns its warnings alongside the value it
    produced. These suites assert on the value, so they drop the warnings. *)
 let parse_inlines text =
   let src = source_from_string text in
-  Tree_md.Markdown.parse_inlines src text ~base_byte:0 |> Result.map fst
+  Tree_of_md_legacy.Markdown.parse_inlines src text ~base_byte:0 |> Result.map fst
 
 let rec node_to_string = function
-  | Tree_md.Ir.Text s -> Printf.sprintf "Text(%S)" s
-  | Tree_md.Ir.Emphasis _ -> "Emphasis"
-  | Tree_md.Ir.Strong _ -> "Strong"
-  | Tree_md.Ir.Code s -> Printf.sprintf "Code(%S)" s
-  | Tree_md.Ir.Link { label = lbl; destination = d; title = _ } ->
-    let label_str = String.concat " " (List.map (fun i -> node_to_string i.Tree_md.Ir.node) lbl) in
+  | Tree_of_md_legacy.Ir.Text s -> Printf.sprintf "Text(%S)" s
+  | Tree_of_md_legacy.Ir.Emphasis _ -> "Emphasis"
+  | Tree_of_md_legacy.Ir.Strong _ -> "Strong"
+  | Tree_of_md_legacy.Ir.Code s -> Printf.sprintf "Code(%S)" s
+  | Tree_of_md_legacy.Ir.Link { label = lbl; destination = d; title = _ } ->
+    let label_str = String.concat " " (List.map (fun i -> node_to_string i.Tree_of_md_legacy.Ir.node) lbl) in
     Printf.sprintf "Link(%S)[%s]" d label_str
-  | Tree_md.Ir.Image { alt = a; destination = d; title = _ } ->
-    let alt_str = String.concat " " (List.map (fun i -> node_to_string i.Tree_md.Ir.node) a) in
+  | Tree_of_md_legacy.Ir.Image { alt = a; destination = d; title = _ } ->
+    let alt_str = String.concat " " (List.map (fun i -> node_to_string i.Tree_of_md_legacy.Ir.node) a) in
     Printf.sprintf "Image(%S)[%s]" d alt_str
-  | Tree_md.Ir.Wiki_link { target = t; alias = a } ->
+  | Tree_of_md_legacy.Ir.Wiki_link { target = t; alias = a } ->
     let alias_str = match a with
       | None -> "" | Some s -> Printf.sprintf " alias=%S" s in
     Printf.sprintf "WikiLink(%S%s)" t alias_str
-  | Tree_md.Ir.Wiki_embed t ->
+  | Tree_of_md_legacy.Ir.Wiki_embed t ->
     Printf.sprintf "WikiEmbed(%S)" t
-  | Tree_md.Ir.Math { tex = t; display = d } ->
+  | Tree_of_md_legacy.Ir.Math { tex = t; display = d } ->
     Printf.sprintf "Math(%S %b)" t d
-  | Tree_md.Ir.Strikethrough _ -> "Strikethrough"
-  | Tree_md.Ir.Highlight _ -> "Highlight"
-  | Tree_md.Ir.Footnote_ref { label; number } ->
+  | Tree_of_md_legacy.Ir.Strikethrough _ -> "Strikethrough"
+  | Tree_of_md_legacy.Ir.Highlight _ -> "Highlight"
+  | Tree_of_md_legacy.Ir.Footnote_ref { label; number } ->
     Printf.sprintf "FootnoteRef(%S %d)" label number
-  | Tree_md.Ir.Hard_break -> "HardBreak"
-  | Tree_md.Ir.Soft_break -> "SoftBreak"
+  | Tree_of_md_legacy.Ir.Hard_break -> "HardBreak"
+  | Tree_of_md_legacy.Ir.Soft_break -> "SoftBreak"
 
 let strings_of result =
   match result with
-  | Ok inlines -> List.map (fun i -> node_to_string i.Tree_md.Ir.node) inlines
+  | Ok inlines -> List.map (fun i -> node_to_string i.Tree_of_md_legacy.Ir.node) inlines
   | Error diags ->
     let msgs = List.map (fun d ->
       Printf.sprintf "%s: %s"
-        (Tree_md.Diagnostic.code_string d.Tree_md.Diagnostic.code)
-        d.Tree_md.Diagnostic.message
+        (Tree_of_md_legacy.Diagnostic.code_string d.Tree_of_md_legacy.Diagnostic.code)
+        d.Tree_of_md_legacy.Diagnostic.message
     ) diags in
     ["ERROR: " ^ String.concat "; " msgs]
 
 let has_diag_code diags code =
-  List.exists (fun d -> Tree_md.Diagnostic.code_string d.Tree_md.Diagnostic.code = code) diags
+  List.exists (fun d -> Tree_of_md_legacy.Diagnostic.code_string d.Tree_of_md_legacy.Diagnostic.code = code) diags
 
 (* ── Basic text and emphasis ── *)
 
@@ -68,17 +68,17 @@ let test_nested_emphasis () =
   let result = parse_inlines "***hello***" in
   match result with
   | Ok [outer] ->
-    (match outer.Tree_md.Ir.node with
-     | Tree_md.Ir.Emphasis [inner] ->
-       (match inner.Tree_md.Ir.node with
-        | Tree_md.Ir.Strong [text] ->
+    (match outer.Tree_of_md_legacy.Ir.node with
+     | Tree_of_md_legacy.Ir.Emphasis [inner] ->
+       (match inner.Tree_of_md_legacy.Ir.node with
+        | Tree_of_md_legacy.Ir.Strong [text] ->
           Alcotest.(check string) "nested text"
-            "Text(\"hello\")" (node_to_string text.Tree_md.Ir.node)
+            "Text(\"hello\")" (node_to_string text.Tree_of_md_legacy.Ir.node)
         | _ -> Alcotest.fail "expected Strong inside Emphasis")
      | _ -> Alcotest.fail "expected Emphasis")
   | Ok _ -> Alcotest.fail "expected single inline"
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags
       |> String.concat "; " in
     Alcotest.fail ("unexpected error: " ^ msgs)
 
@@ -150,8 +150,8 @@ let test_hard_break () =
   let result = parse_inlines "line1\\\nline2" in
   let has_hard = match result with
     | Ok inlines ->
-      List.exists (fun i -> match i.Tree_md.Ir.node with
-        | Tree_md.Ir.Hard_break -> true | _ -> false) inlines
+      List.exists (fun i -> match i.Tree_of_md_legacy.Ir.node with
+        | Tree_of_md_legacy.Ir.Hard_break -> true | _ -> false) inlines
     | Error _ -> false
   in
   Alcotest.(check bool) "has hard break" true has_hard
@@ -160,8 +160,8 @@ let test_soft_break () =
   let result = parse_inlines "line1\nline2" in
   let has_soft = match result with
     | Ok inlines ->
-      List.exists (fun i -> match i.Tree_md.Ir.node with
-        | Tree_md.Ir.Soft_break -> true | _ -> false) inlines
+      List.exists (fun i -> match i.Tree_of_md_legacy.Ir.node with
+        | Tree_of_md_legacy.Ir.Soft_break -> true | _ -> false) inlines
     | Error _ -> false
   in
   Alcotest.(check bool) "has soft break" true has_soft
@@ -183,17 +183,17 @@ let test_unicode () =
   match result with
   | Ok [t1; strong; t2] ->
     Alcotest.(check string) "unicode break"
-      "Text(\"\\230\\151\\165\")" (node_to_string t1.Tree_md.Ir.node);
+      "Text(\"\\230\\151\\165\")" (node_to_string t1.Tree_of_md_legacy.Ir.node);
     Alcotest.(check string) "unicode strong"
-      "Strong" (node_to_string strong.Tree_md.Ir.node);
+      "Strong" (node_to_string strong.Tree_of_md_legacy.Ir.node);
     Alcotest.(check string) "unicode end"
-      "Text(\"\\232\\170\\158\")" (node_to_string t2.Tree_md.Ir.node)
+      "Text(\"\\232\\170\\158\")" (node_to_string t2.Tree_of_md_legacy.Ir.node)
   | Ok other ->
     Alcotest.(check (list string)) "unicode shape"
       ["Text(\"\\230\\151\\165\")"; "Strong"; "Text(\"\\232\\170\\158\")"]
       (strings_of result)
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags
       |> String.concat "; " in
     Alcotest.fail ("unexpected error: " ^ msgs)
 
@@ -214,7 +214,7 @@ let test_strikethrough_lowered () =
   | Error diags ->
     Alcotest.fail ("strikethrough rejected: "
                    ^ String.concat "; "
-                       (List.map (fun d -> d.Tree_md.Diagnostic.message) diags))
+                       (List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags))
   | Ok inlines ->
     Alcotest.(check (list string)) "one strikethrough" [ "Strikethrough" ]
       (strings_of (Ok inlines))
@@ -224,7 +224,7 @@ let test_highlight_lowered () =
   | Error diags ->
     Alcotest.fail ("highlight rejected: "
                    ^ String.concat "; "
-                       (List.map (fun d -> d.Tree_md.Diagnostic.message) diags))
+                       (List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags))
   | Ok inlines ->
     Alcotest.(check (list string)) "one highlight" [ "Highlight" ]
       (strings_of (Ok inlines))
@@ -254,72 +254,72 @@ let test_obsidian_comment_dropped () =
 (* ── URI validation tests ── *)
 
 let test_uri_percent_encode_space () =
-  let span = Result.get_ok (Tree_md.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:25) in
-  let result = Tree_md.Safe_uri.validate Tree_md.Safe_uri.Link span
+  let span = Result.get_ok (Tree_of_md_legacy.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:25) in
+  let result = Tree_of_md_legacy.Safe_uri.validate Tree_of_md_legacy.Safe_uri.Link span
     "https://example.test/a b"
   in
   match result with
   | Ok s ->
     Alcotest.(check string) "percent encode space"
-      "https://example.test/a%20b" s.Tree_md.Safe_uri.encoded;
+      "https://example.test/a%20b" s.Tree_of_md_legacy.Safe_uri.encoded;
     (* The written form is what a file-system lookup needs, so it keeps the
        bytes the note actually wrote. *)
     Alcotest.(check string) "written form is untouched"
-      "https://example.test/a b" s.Tree_md.Safe_uri.written
+      "https://example.test/a b" s.Tree_of_md_legacy.Safe_uri.written
   | Error d ->
-    Alcotest.fail ("expected Ok, got: " ^ d.Tree_md.Diagnostic.message)
+    Alcotest.fail ("expected Ok, got: " ^ d.Tree_of_md_legacy.Diagnostic.message)
 
 let test_uri_mailto_accepted () =
-  let result = Tree_md.Safe_uri.validate Tree_md.Safe_uri.Link
-    (Result.get_ok (Tree_md.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:22))
+  let result = Tree_of_md_legacy.Safe_uri.validate Tree_of_md_legacy.Safe_uri.Link
+    (Result.get_ok (Tree_of_md_legacy.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:22))
     "mailto:a@example.test"
   in
   match result with
   | Ok _ -> ()
   | Error d ->
-    Alcotest.fail ("expected Ok, got: " ^ d.Tree_md.Diagnostic.message)
+    Alcotest.fail ("expected Ok, got: " ^ d.Tree_of_md_legacy.Diagnostic.message)
 
 let test_uri_fragment_accepted () =
-  let result = Tree_md.Safe_uri.validate Tree_md.Safe_uri.Link
-    (Result.get_ok (Tree_md.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:8))
+  let result = Tree_of_md_legacy.Safe_uri.validate Tree_of_md_legacy.Safe_uri.Link
+    (Result.get_ok (Tree_of_md_legacy.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:8))
     "#section"
   in
   match result with
   | Ok _ -> ()
   | Error d ->
-    Alcotest.fail ("expected Ok, got: " ^ d.Tree_md.Diagnostic.message)
+    Alcotest.fail ("expected Ok, got: " ^ d.Tree_of_md_legacy.Diagnostic.message)
 
 let test_uri_relative_accepted () =
-  let result = Tree_md.Safe_uri.validate Tree_md.Safe_uri.Link
-    (Result.get_ok (Tree_md.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:4))
+  let result = Tree_of_md_legacy.Safe_uri.validate Tree_of_md_legacy.Safe_uri.Link
+    (Result.get_ok (Tree_of_md_legacy.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:4))
     "note"
   in
   match result with
   | Ok _ -> ()
   | Error d ->
-    Alcotest.fail ("expected Ok, got: " ^ d.Tree_md.Diagnostic.message)
+    Alcotest.fail ("expected Ok, got: " ^ d.Tree_of_md_legacy.Diagnostic.message)
 
 let test_uri_javascript_rejected () =
-  let result = Tree_md.Safe_uri.validate Tree_md.Safe_uri.Link
-    (Result.get_ok (Tree_md.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:17))
+  let result = Tree_of_md_legacy.Safe_uri.validate Tree_of_md_legacy.Safe_uri.Link
+    (Result.get_ok (Tree_of_md_legacy.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:17))
     "javascript:alert(1)"
   in
   match result with
   | Error d ->
     Alcotest.(check string) "javascript TM205"
-      "TM205" (Tree_md.Diagnostic.code_string d.Tree_md.Diagnostic.code)
+      "TM205" (Tree_of_md_legacy.Diagnostic.code_string d.Tree_of_md_legacy.Diagnostic.code)
   | Ok _ ->
     Alcotest.fail "expected TM205 for javascript:"
 
 let test_uri_data_image_rejected () =
-  let result = Tree_md.Safe_uri.validate Tree_md.Safe_uri.Image
-    (Result.get_ok (Tree_md.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:22))
+  let result = Tree_of_md_legacy.Safe_uri.validate Tree_of_md_legacy.Safe_uri.Image
+    (Result.get_ok (Tree_of_md_legacy.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:22))
     "data:image/png;base64,x"
   in
   match result with
   | Error d ->
     Alcotest.(check string) "data image TM205"
-      "TM205" (Tree_md.Diagnostic.code_string d.Tree_md.Diagnostic.code)
+      "TM205" (Tree_of_md_legacy.Diagnostic.code_string d.Tree_of_md_legacy.Diagnostic.code)
   | Ok _ ->
     Alcotest.fail "expected TM205 for data: image"
 
@@ -328,79 +328,79 @@ let test_uri_data_image_rejected () =
 let test_metadata_lower_tags () =
   let src = source_from_string "**bold**" in
   let parse located =
-    Tree_md.Markdown.parse_inlines src located.Tree_md.Metadata.value
-      ~base_byte:located.Tree_md.Metadata.span.Tree_md.Span.start_byte
+    Tree_of_md_legacy.Markdown.parse_inlines src located.Tree_of_md_legacy.Metadata.value
+      ~base_byte:located.Tree_of_md_legacy.Metadata.span.Tree_of_md_legacy.Span.start_byte
   in
-  let raw : Tree_md.Metadata.raw = {
-    Tree_md.Metadata.id = None;
+  let raw : Tree_of_md_legacy.Metadata.raw = {
+    Tree_of_md_legacy.Metadata.id = None;
     date = None;
     taxon = None;
     authors = [];
     contributors = [];
     tags = [
-      { Tree_md.Metadata.value = "**bold**";
-        span = Result.get_ok (Tree_md.Span.make ~path:"test.md" ~start_byte:10 ~end_byte:18) };
-      { Tree_md.Metadata.value = "_italic_";
-        span = Result.get_ok (Tree_md.Span.make ~path:"test.md" ~start_byte:20 ~end_byte:28) };
+      { Tree_of_md_legacy.Metadata.value = "**bold**";
+        span = Result.get_ok (Tree_of_md_legacy.Span.make ~path:"test.md" ~start_byte:10 ~end_byte:18) };
+      { Tree_of_md_legacy.Metadata.value = "_italic_";
+        span = Result.get_ok (Tree_of_md_legacy.Span.make ~path:"test.md" ~start_byte:20 ~end_byte:28) };
     ];
     meta = [];
   } in
-  match Tree_md.Metadata.lower_inline_values ~parse raw with
+  match Tree_of_md_legacy.Metadata.lower_inline_values ~parse raw with
   | Ok (lowered, _) ->
     Alcotest.(check int) "two tags" 2 (List.length lowered.tags);
     (match lowered.tags with
      | [tag1; tag2] ->
-       (match tag1.Tree_md.Metadata.value with
+       (match tag1.Tree_of_md_legacy.Metadata.value with
         | [i] ->
           Alcotest.(check string) "tag1 bold"
-            "Strong" (node_to_string i.Tree_md.Ir.node)
+            "Strong" (node_to_string i.Tree_of_md_legacy.Ir.node)
         | _ -> Alcotest.fail "expected one inline in tag1");
-       (match tag2.Tree_md.Metadata.value with
+       (match tag2.Tree_of_md_legacy.Metadata.value with
         | [i] ->
           Alcotest.(check string) "tag2 italic"
-            "Emphasis" (node_to_string i.Tree_md.Ir.node)
+            "Emphasis" (node_to_string i.Tree_of_md_legacy.Ir.node)
         | _ -> Alcotest.fail "expected one inline in tag2")
      | _ -> Alcotest.fail "expected two tags")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags
       |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_metadata_lower_meta () =
   let src = source_from_string "[link](https://example.test)" in
   let parse located =
-    Tree_md.Markdown.parse_inlines src located.Tree_md.Metadata.value
-      ~base_byte:located.Tree_md.Metadata.span.Tree_md.Span.start_byte
+    Tree_of_md_legacy.Markdown.parse_inlines src located.Tree_of_md_legacy.Metadata.value
+      ~base_byte:located.Tree_of_md_legacy.Metadata.span.Tree_of_md_legacy.Span.start_byte
   in
-  let raw : Tree_md.Metadata.raw = {
-    Tree_md.Metadata.id = None;
+  let raw : Tree_of_md_legacy.Metadata.raw = {
+    Tree_of_md_legacy.Metadata.id = None;
     date = None;
     taxon = None;
     authors = [];
     contributors = [];
     tags = [];
     meta = [
-      ({ Tree_md.Metadata.value = "inst";
-         span = Result.get_ok (Tree_md.Span.make ~path:"test.md" ~start_byte:5 ~end_byte:10) },
-       { Tree_md.Metadata.value = "[link](https://example.test)";
-         span = Result.get_ok (Tree_md.Span.make ~path:"test.md" ~start_byte:12 ~end_byte:40) });
+      ({ Tree_of_md_legacy.Metadata.value = "inst";
+         span = Result.get_ok (Tree_of_md_legacy.Span.make ~path:"test.md" ~start_byte:5 ~end_byte:10) },
+       { Tree_of_md_legacy.Metadata.value = "[link](https://example.test)";
+         span = Result.get_ok (Tree_of_md_legacy.Span.make ~path:"test.md" ~start_byte:12 ~end_byte:40) });
     ];
   } in
-  match Tree_md.Metadata.lower_inline_values ~parse raw with
+  match Tree_of_md_legacy.Metadata.lower_inline_values ~parse raw with
   | Ok (lowered, _) ->
     Alcotest.(check int) "one meta" 1 (List.length lowered.meta);
     (match lowered.meta with
      | [(key, value)] ->
-       Alcotest.(check string) "meta key" "inst" key.Tree_md.Metadata.value;
-       (match value.Tree_md.Metadata.value with
+       Alcotest.(check string) "meta key" "inst" key.Tree_of_md_legacy.Metadata.value;
+       (match value.Tree_of_md_legacy.Metadata.value with
         | [i] ->
           Alcotest.(check string) "meta value link"
             "Link(\"https://example.test\")[Text(\"link\")]"
-            (node_to_string i.Tree_md.Ir.node)
+            (node_to_string i.Tree_of_md_legacy.Ir.node)
         | _ -> Alcotest.fail "expected one inline in meta value")
      | _ -> Alcotest.fail "expected one meta entry")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags
       |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
@@ -410,20 +410,20 @@ let test_hostile_unicode () =
   let result = parse_inlines "`\\x00`" in
   match result with
   | Ok [i] ->
-    (match i.Tree_md.Ir.node with
-     | Tree_md.Ir.Code "\\x00" -> ()
+    (match i.Tree_of_md_legacy.Ir.node with
+     | Tree_of_md_legacy.Ir.Code "\\x00" -> ()
      | _ -> Alcotest.fail "expected Code node")
   | _ -> Alcotest.fail "expected Ok"
 
 let test_uri_nul_rejected () =
-  let result = Tree_md.Safe_uri.validate Tree_md.Safe_uri.Link
-    (Result.get_ok (Tree_md.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:10))
+  let result = Tree_of_md_legacy.Safe_uri.validate Tree_of_md_legacy.Safe_uri.Link
+    (Result.get_ok (Tree_of_md_legacy.Span.make ~path:"test.md" ~start_byte:0 ~end_byte:10))
     "http://a\x00b"
   in
   match result with
   | Error d ->
     Alcotest.(check string) "NUL TM205"
-      "TM205" (Tree_md.Diagnostic.code_string d.Tree_md.Diagnostic.code)
+      "TM205" (Tree_of_md_legacy.Diagnostic.code_string d.Tree_of_md_legacy.Diagnostic.code)
   | Ok _ -> Alcotest.fail "expected TM205 for NUL in URI"
 
 (* ── Span assertions: every inline has a valid span ── *)
@@ -432,15 +432,15 @@ let test_every_inline_has_span () =
   let result = parse_inlines "hello **world**" in
   match result with
   | Ok inlines ->
-    List.iter (fun (i : Tree_md.Ir.inline) ->
-      let sp = i.Tree_md.Ir.span in
+    List.iter (fun (i : Tree_of_md_legacy.Ir.inline) ->
+      let sp = i.Tree_of_md_legacy.Ir.span in
       Alcotest.(check bool) "span start_byte >= 0"
-        true (sp.Tree_md.Span.start_byte >= 0);
+        true (sp.Tree_of_md_legacy.Span.start_byte >= 0);
       Alcotest.(check bool) "span end_byte >= start_byte"
-        true (sp.Tree_md.Span.end_byte >= sp.Tree_md.Span.start_byte)
+        true (sp.Tree_of_md_legacy.Span.end_byte >= sp.Tree_of_md_legacy.Span.start_byte)
     ) inlines
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags
       |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
@@ -485,14 +485,14 @@ let test_parse_wiki_bad_id () =
   match parse_inlines "[[bad id]]" with
   | Ok _ -> ()
   | Error diags ->
-    let messages = List.map (fun d -> d.Tree_md.Diagnostic.message) diags in
+    let messages = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags in
     Alcotest.fail ("spaced wiki target rejected: " ^ String.concat "; " messages)
 
 let test_parse_wiki_japanese_target () =
   match parse_inlines "[[日本語のノート]]" with
   | Ok _ -> ()
   | Error diags ->
-    let messages = List.map (fun d -> d.Tree_md.Diagnostic.message) diags in
+    let messages = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags in
     Alcotest.fail ("japanese wiki target rejected: " ^ String.concat "; " messages)
 
 let test_parse_wiki_empty_alias () =
@@ -535,17 +535,17 @@ let test_parse_link_space_encoded () =
   match result with
   | Ok inlines ->
     (match inlines with
-     | [{ Tree_md.Ir.node = Tree_md.Ir.Link { destination = dest; _ }; _ }] ->
+     | [{ Tree_of_md_legacy.Ir.node = Tree_of_md_legacy.Ir.Link { destination = dest; _ }; _ }] ->
        Alcotest.(check string) "carried as written" "https://example.test/a b" dest;
        Alcotest.(check string) "encoded on the way out"
-         "https://example.test/a%20b" (Tree_md.Safe_uri.percent_encode dest);
+         "https://example.test/a%20b" (Tree_of_md_legacy.Safe_uri.percent_encode dest);
        (* Encoding is idempotent, so a URL already written encoded stays put. *)
        Alcotest.(check string) "already-encoded stays put"
          "https://example.test/a%20b"
-         (Tree_md.Safe_uri.percent_encode "https://example.test/a%20b")
+         (Tree_of_md_legacy.Safe_uri.percent_encode "https://example.test/a%20b")
      | _ -> Alcotest.fail "expected Link node")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags
       |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
@@ -554,11 +554,11 @@ let test_parse_link_fragment_encoded () =
   match result with
   | Ok inlines ->
     (match inlines with
-     | [{ Tree_md.Ir.node = Tree_md.Ir.Link { destination = dest; _ }; _ }] ->
+     | [{ Tree_of_md_legacy.Ir.node = Tree_of_md_legacy.Ir.Link { destination = dest; _ }; _ }] ->
        Alcotest.(check string) "fragment preserved" "#section" dest
      | _ -> Alcotest.fail "expected Link node")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags
       |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
@@ -567,11 +567,11 @@ let test_parse_link_relative_encoded () =
   match result with
   | Ok inlines ->
     (match inlines with
-     | [{ Tree_md.Ir.node = Tree_md.Ir.Link { destination = dest; _ }; _ }] ->
+     | [{ Tree_of_md_legacy.Ir.node = Tree_of_md_legacy.Ir.Link { destination = dest; _ }; _ }] ->
        Alcotest.(check string) "relative preserved" "note" dest
      | _ -> Alcotest.fail "expected Link node")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags
       |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
@@ -582,7 +582,7 @@ let test_parse_math_has_span () =
   match result with
   | Ok [i] ->
     Alcotest.(check bool) "math span valid" true
-      (i.Tree_md.Ir.span.Tree_md.Span.end_byte > i.Tree_md.Ir.span.Tree_md.Span.start_byte)
+      (i.Tree_of_md_legacy.Ir.span.Tree_of_md_legacy.Span.end_byte > i.Tree_of_md_legacy.Ir.span.Tree_of_md_legacy.Span.start_byte)
   | _ -> Alcotest.fail "expected Ok"
 
 let () =

@@ -6,7 +6,7 @@
 
 let current_version = Version.current
 
-(* Format 2 writes every path the way tree-md.toml names it — relative to the
+(* Format 2 writes every path the way tree_of_md.toml names it — relative to the
    directory holding that file — where format 1 wrote an output relative to
    the output root. The change is what lets one manifest own a generated tree
    and an attachment copied under an asset root, which are in different
@@ -41,13 +41,13 @@ let is_lower_hex = function
 let valid_sha256 hash =
   String.length hash = 64 && String.for_all is_lower_hex hash
 
-(* The output-root names .tree-md-manifest.json, .tree-md-transaction.json,
-   .tree-md.lock, and .tree-md-stage/ are reserved for compiler state, so a
-   generated output path may not use any component beginning with .tree-md. *)
-let has_tree_md_component path =
+(* The output-root names .tree_of_md-manifest.json, .tree_of_md-transaction.json,
+   .tree_of_md.lock, and .tree_of_md-stage/ are reserved for compiler state, so a
+   generated output path may not use any component beginning with .tree_of_md. *)
+let has_tree_of_md_component path =
   List.exists
     (fun component ->
-      String.length component >= 8 && String.sub component 0 8 = ".tree-md")
+      String.starts_with ~prefix:".tree_of_md" component)
     (String.split_on_char '/' path)
 
 let compare_entry (a : entry) (b : entry) =
@@ -145,8 +145,8 @@ let validate_entry_paths path source output =
     match Path_safe.relative output with
     | Error message -> field_error path ("invalid output path: " ^ message)
     | Ok output_relative ->
-      if has_tree_md_component output then
-        field_error path "output path uses a reserved .tree-md component"
+      if has_tree_of_md_component output then
+        field_error path "output path uses a reserved .tree_of_md component"
       else Ok (source_relative, output_relative)
 
 let decode_entry path = function

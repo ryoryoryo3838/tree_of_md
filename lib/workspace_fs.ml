@@ -29,10 +29,10 @@ let tm404 path message =
 let fail_tm403 path message = Error [ tm403 path message ]
 let fail_tm404 path message = Error [ tm404 path message ]
 
-let journal_path root = Filename.concat root ".tree-md-transaction.json"
-let manifest_path root = Filename.concat root ".tree-md-manifest.json"
-let lock_path root = Filename.concat root ".tree-md.lock"
-let stage_root root = Filename.concat root ".tree-md-stage"
+let journal_path root = Filename.concat root ".tree_of_md-transaction.json"
+let manifest_path root = Filename.concat root ".tree_of_md-manifest.json"
+let lock_path root = Filename.concat root ".tree_of_md.lock"
+let stage_root root = Filename.concat root ".tree_of_md-stage"
 
 (* ── no-symlink path traversal ── *)
 
@@ -147,7 +147,7 @@ let lstat_is_dir path =
     st.Unix.st_kind = Unix.S_DIR
   with Unix.Unix_error _ -> false
 
-(* walk_stage_entries traverses .tree-md-stage/ using lstat so that symlinks
+(* walk_stage_entries traverses .tree_of_md-stage/ using lstat so that symlinks
    are never followed.  Symlink entries are silently skipped; regular files
    are recorded; symlinked directories are not recursed into. *)
 let walk_stage_entries stage_base =
@@ -166,7 +166,7 @@ let walk_stage_entries stage_base =
         else if Sys.file_exists full then
           (* regular file or symlink-to-file: include in listing; symlinks
              are harmless in snapshot (no read follows them) *)
-          results := (".tree-md-stage/" ^ rel) :: !results
+          results := (".tree_of_md-stage/" ^ rel) :: !results
         (* symlink-to-dir, fifo, socket, etc.: silently skip *)
       end)
       entries

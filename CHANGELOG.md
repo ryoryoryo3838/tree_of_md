@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The project is renamed from `tree-md` to `tree_of_md`. The opam package and
+  repository are `tree_of_md`; the public-v2 library is `tree_of_md` (was
+  `tree-md.tree_of_md`); the Markdown compiler is the `tree_of_md_legacy`
+  executable and the `tree_of_md.legacy` library (module `Tree_of_md_legacy`,
+  was `Tree_md`). The configuration file is `tree_of_md.toml`, the output-root
+  state files are `.tree_of_md-manifest.json`, `.tree_of_md-transaction.json`,
+  `.tree_of_md.lock` and `.tree_of_md-stage/`, and the backtrace switch is
+  `TREE_OF_MD_BACKTRACE`. Existing `tree-md.toml` files and output roots built
+  by `tree-md` are not read under the old names; rename them.
+
 ### Added
 
 - A ` ```cardlink ` or ` ```embed ` block — what an Obsidian link-card plugin
@@ -31,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   this means anything by — `parser`, `aspectRatio` — is carried nowhere rather
   than rejected.
 
-- `[assets].into` in `tree-md.toml` says where an attachment a published tree
+- `[assets].into` in `tree_of_md.toml` says where an attachment a published tree
   embeds is copied to, so that a vault can keep its attachments beside its
   notes — `DAILY/assets/CYCL-01.jpg` — and Forester can still serve them,
   which it does only from a directory `forest.toml` names. The copy keeps the
@@ -52,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is and which setting carries it across, instead of sending the writer to
   look for a file that is sitting right there.
 
-- `[publish].from` in `tree-md.toml` names the trees a build starts from, as
+- `[publish].from` in `tree_of_md.toml` names the trees a build starts from, as
   globs relative to a source root; everything those reach transitively comes
   with them. A whole Obsidian vault can then be the source without the whole
   vault becoming the site: a published page may link to a note kept anywhere,
@@ -73,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   deletes every tree it wrote before, which otherwise looks exactly like a
   build with nothing to do.
 
-- tree-md reads what a collection declares as an
+- tree_of_md reads what a collection declares as an
   [mdbase](https://github.com/mdbase-dev/mdbase-spec) v0.3.0 collection.
   `mdbase.yaml` supplies `settings.validation` (the severity a schema
   violation is reported at, or `off`), `settings.types_folder`,
@@ -82,7 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   folder pair a `match` rule with a JSON Schema; the schema validates the front
   matter as written, and `collection.read_defaults` then supplies a value for
   each key a record leaves missing, writing nothing back to the note. A
-  violation carries mdbase's canonical code beside tree-md's own, as
+  violation carries mdbase's canonical code beside tree_of_md's own, as
   `TM101 (schema_enum)`. Nothing is required: a forest with neither file
   behaves exactly as it did before they existed.
 
@@ -90,11 +102,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keyword outside it makes the schema fail to compile rather than being
   ignored when a record is validated. The same rule governs a type file's own
   sections: `collection.unique`, `collection.links`, `lifecycle` and the rest
-  are refused with a message saying what tree-md does instead, because a type
+  are refused with a message saying what tree_of_md does instead, because a type
   that silently means less than it says is worse than one that will not load.
 
 - Front matter is an arbitrary mapping, as mdbase v0.3 §03 defines it. A key
-  `tree-md` does not interpret is carried and emitted nowhere instead of being
+  `tree_of_md` does not interpret is carried and emitted nowhere instead of being
   a `TM101`, so the `aliases`, `cssclasses`, `created` and `publish` an
   Obsidian vault is full of no longer stop a file from compiling. A key within
   an edit or two of one it does know — `taxo:` for `taxon:` — is still
@@ -145,7 +157,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Diagnostics now have two severities. A **warning** carries the same code,
   span, and excerpt as an error, but never changes the exit code and never
   stops a build from writing. Where mdbase v0.3 defines a canonical code for
-  the same condition it is rendered alongside tree-md's own, as
+  the same condition it is rendered alongside tree_of_md's own, as
   `TM101 (schema_additional_properties): warning: …`.
 
 - A file name may be anything the filesystem allows. `日本語のノート.tree.md`
@@ -182,7 +194,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   form is what Obsidian writes for a block reference, so one note spells a
   subtree's address the same way in both tools.
 
-- `tree-md build` gives an address to every tree that states none, writes it
+- `tree_of_md_legacy build` gives an address to every tree that states none, writes it
   into the note's front matter, and reports what it gave to what. The scheme
   follows Forester's own convention — a base-36 number zero-padded to four
   digits — and is configurable under `[id]` (`alphabet`, `width`, `scheme`,
@@ -209,12 +221,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Complete opam metadata: license, homepage, bug reports, authors, maintainer,
   description, and tags.
 - GitHub Actions CI running build, the full test suite, and a check that the
-  generated `tree-md.opam` is not stale.
+  generated `tree_of_md.opam` is not stale.
 - Japanese README ([`README.ja.md`](./README.ja.md)).
 
 ### Changed
 
-- The manifest names every managed file the way `tree-md.toml` names one:
+- The manifest names every managed file the way `tree_of_md.toml` names one:
   relative to the directory that file is in. Format 1 named an output below
   the output root, which one manifest cannot do for both a tree and an
   attachment copied under an asset root — they are in different places. A
@@ -223,7 +235,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   With that, what a managed file is *called* stops being the manifest's
   business: an output no longer has to end in `.tree`, nor a source in
-  `.tree.md`. What is refused is what the compiler reserves — a `.tree-md`
+  `.tree.md`. What is refused is what the compiler reserves — a `.tree_of_md`
   path component — and a manifest naming a file under a source root, which no
   build writes to and which acting on would delete somebody's note.
 
@@ -261,7 +273,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   make.
 
 - The package version is now declared once, in `dune-project`, and generated
-  into `Tree_md.Version.current`. Previously it was hardcoded separately in
+  into `Tree_of_md_legacy.Version.current`. Previously it was hardcoded separately in
   `dune-project`, `lib/cli.ml`, and `lib/manifest.ml`, where a release could
   silently desync the manifest's `compiler` field from the reported version.
 - opam dependency constraints are lower bounds (`>=`) expressing the supported
@@ -313,13 +325,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `tree-md.opam.locked`. It duplicated `dune.lock/` while drifting out of step
   with it, leaving it ambiguous which lockfile was authoritative. `dune.lock/`
   is now the single lock artifact; regenerate an opam-native lock with
-  `opam lock tree-md.opam` if one is needed.
+  `opam lock tree_of_md.opam` if one is needed.
 
 ## [0.1.0]
 
 Initial implementation.
 
-- `tree-md check` and `tree-md build` subcommands, with exit codes 0 (clean),
+- `tree_of_md_legacy check` and `tree_of_md_legacy build` subcommands, with exit codes 0 (clean),
   1 (source/semantic/forest/generated-state diagnostics), and 2 (usage,
   configuration, manifest, journal, I/O, internal failure).
 - Strict `.tree.md` Markdown dialect compiled to deterministic Forester
@@ -329,5 +341,5 @@ Initial implementation.
 - Manifest-owned generated files with SHA-256 manual-modification protection,
   writer locking, and journal-based transactional roll-forward.
 
-[Unreleased]: https://github.com/ryoryoryo3838/tree-md/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/ryoryoryo3838/tree-md/releases/tag/v0.1.0
+[Unreleased]: https://github.com/ryoryoryo3838/tree_of_md/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ryoryoryo3838/tree_of_md/releases/tag/v0.1.0

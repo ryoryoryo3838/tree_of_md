@@ -81,7 +81,7 @@ def publish_binary(root, fresh):
 
 def source_manifest(root):
     checked(root, directory=True)
-    paths = [root / name for name in ("dune-project", "dune-workspace", "tree-md.opam")]
+    paths = [root / name for name in ("dune-project", "dune-workspace", "tree_of_md.opam")]
     for name in ("bin", "lib", "dune.lock"):
         directory = root / name
         checked(directory, directory=True)

@@ -3,7 +3,7 @@ opam-version: "2.0"
 version: "0.1.0"
 synopsis: "Compile strict Markdown into Forester tree source"
 description: """
-tree-md compiles a strict Markdown dialect (.tree.md) into deterministic
+tree_of_md compiles a strict Markdown dialect (.tree.md) into deterministic
 Forester .tree source. Headings become nested subtrees, Obsidian-style wiki
 links and embeds become tree references and transclusions, and every generated
 file is manifest-owned, hash-checked, and byte-deterministic. Unsupported
@@ -13,8 +13,8 @@ maintainer: ["ryoryoryo3838 <rseimiya@miya-lis.net>"]
 authors: ["ryoryoryo3838"]
 license: "MIT"
 tags: ["markdown" "forester" "transpiler" "static-site" "obsidian"]
-homepage: "https://github.com/ryoryoryo3838/tree-md"
-bug-reports: "https://github.com/ryoryoryo3838/tree-md/issues"
+homepage: "https://github.com/ryoryoryo3838/tree_of_md"
+bug-reports: "https://github.com/ryoryoryo3838/tree_of_md/issues"
 depends: [
   "dune" {>= "3.22"}
   "ocaml" {>= "5.3.0"}
@@ -43,5 +43,5 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/ryoryoryo3838/tree-md.git"
+dev-repo: "git+https://github.com/ryoryoryo3838/tree_of_md.git"
 x-maintenance-intent: ["(latest)"]

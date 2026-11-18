@@ -24,19 +24,19 @@ let default = {
 
 let file_name = "mdbase.yaml"
 
-(* Settings tree-md reads and acts on. *)
+(* Settings tree_of_md reads and acts on. *)
 let acted_on_settings =
   [ "validation"; "types_folder"; "explicit_type_keys"; "id_field" ]
 
-(* Settings that are part of §04 but decide nothing here, because tree-md
+(* Settings that are part of §04 but decide nothing here, because tree_of_md
    discovers its own sources: it compiles `.tree.md` under the `sources` roots
-   named in tree-md.toml, not every record extension under the collection root.
+   named in tree_of_md.toml, not every record extension under the collection root.
    Reported rather than accepted in silence, so that setting one and seeing no
    effect is not a mystery. *)
 let inert_settings =
   [ "record_extensions"; "include_subfolders"; "exclude" ]
 
-(* Part of §04, and genuinely without effect here: tree-md computes no dates
+(* Part of §04, and genuinely without effect here: tree_of_md computes no dates
    and loads no data contracts. *)
 let accepted_settings = [ "timezone"; "contracts_folder" ]
 
@@ -125,7 +125,7 @@ let load ~directory =
         | None ->
           Error
             [ diagnostic TM401 path
-                (file_name ^ " must declare spec_version; this tree-md \
+                (file_name ^ " must declare spec_version; this tree_of_md \
                   supports " ^ supported_spec_version) ]
         | Some declared ->
           (* §04: during major-zero the minor component is the compatibility
@@ -140,7 +140,7 @@ let load ~directory =
             Error
               [ diagnostic TM401 path
                   (file_name ^ " declares spec_version \"" ^ declared
-                   ^ "\"; this tree-md supports " ^ supported_spec_version) ]
+                   ^ "\"; this tree_of_md supports " ^ supported_spec_version) ]
           else
             let settings =
               match Yaml_json.field node "settings" with
@@ -157,9 +157,9 @@ let load ~directory =
                   else if List.mem name inert_settings then
                     add_warning
                       (warn TM401 path
-                         ("settings." ^ name ^ " has no effect here: tree-md \
+                         ("settings." ^ name ^ " has no effect here: tree_of_md \
                            compiles the `.tree.md` files under the source \
-                           roots named in tree-md.toml"))
+                           roots named in tree_of_md.toml"))
                   else if not (List.mem name known_settings) then
                     add_warning
                       (warn TM401 path

@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 let obj fields = `Assoc fields
 let strings xs = `List (List.map (fun x -> `String x) xs)

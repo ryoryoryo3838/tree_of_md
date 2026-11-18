@@ -102,7 +102,7 @@ let with_id ~id_field contents id =
 let write_file path contents =
   (* Same file, replaced in one step, so an interrupted write cannot leave a
      note half-rewritten. *)
-  let temporary = path ^ ".tree-md-id" in
+  let temporary = path ^ ".tree_of_md-id" in
   match
     Out_channel.with_open_bin temporary (fun channel ->
       Out_channel.output_string channel contents;

@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 let sha_64 =
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
@@ -63,7 +63,7 @@ let entry_json ~source ~output ~sha256 =
 let files_json entries = "[" ^ String.concat "," entries ^ "]"
 
 let expect_tm402 name json =
-  match Manifest.decode ~path:"out/.tree-md-manifest.json" json with
+  match Manifest.decode ~path:"out/.tree_of_md-manifest.json" json with
   | Ok _ -> Alcotest.fail (name ^ ": expected TM402")
   | Error diagnostics ->
     let codes =
@@ -113,7 +113,7 @@ let test_round_trip () =
         expected ~source:"trees-md/child.tree.md" ~output:"child.tree" ~sha256:hash_abc ]
   in
   let encoded = Manifest.encode manifest in
-  match Manifest.decode ~path:"out/.tree-md-manifest.json" encoded with
+  match Manifest.decode ~path:"out/.tree_of_md-manifest.json" encoded with
   | Error diagnostics ->
     let messages = List.map (fun d -> d.Diagnostic.message) diagnostics in
     Alcotest.fail ("decode failed: " ^ String.concat "; " messages)
@@ -137,7 +137,7 @@ let test_decode_sorts () =
                        ~output:"\"a.tree\"" ~sha256:("\"" ^ sha_64 ^ "\"") ])
          ())
   in
-  match Manifest.decode ~path:"out/.tree-md-manifest.json" json with
+  match Manifest.decode ~path:"out/.tree_of_md-manifest.json" json with
   | Error diagnostics ->
     let messages = List.map (fun d -> d.Diagnostic.message) diagnostics in
     Alcotest.fail ("decode failed: " ^ String.concat "; " messages)
@@ -383,7 +383,7 @@ let test_attachment_entry_decodes () =
           ~sha256:("\"" ^ sha_64 ^ "\"") ]
   in
   match
-    Manifest.decode ~path:"out/.tree-md-manifest.json"
+    Manifest.decode ~path:"out/.tree_of_md-manifest.json"
       (object_json (default_fields ~files ()))
   with
   | Error diagnostics ->
@@ -406,7 +406,7 @@ let test_format_1_outputs_are_lifted () =
   in
   match
     Manifest.decode ~output_root:(rel "generated")
-      ~path:"generated/.tree-md-manifest.json"
+      ~path:"generated/.tree_of_md-manifest.json"
       (object_json (default_fields ~format:"1" ~files ()))
   with
   | Error diagnostics ->
@@ -418,15 +418,15 @@ let test_format_1_outputs_are_lifted () =
       [ "trees-md/a.tree.md|generated/a.tree|" ^ sha_64 ]
       (files_strings decoded)
 
-let test_tm402_tree_md_component () =
-  let outputs = [ ".tree-md-stage/a.tree"; "sub/.tree-md-x/a.tree" ] in
+let test_tm402_tree_of_md_component () =
+  let outputs = [ ".tree_of_md-stage/a.tree"; "sub/.tree_of_md-x/a.tree" ] in
   List.iter (fun output ->
     let files =
       files_json
         [ entry_json ~source:"\"trees-md/a.tree.md\"" ~output:("\"" ^ output ^ "\"")
             ~sha256:("\"" ^ sha_64 ^ "\"") ]
     in
-    expect_tm402 ("reserved .tree-md component " ^ output)
+    expect_tm402 ("reserved .tree_of_md component " ^ output)
       (object_json (default_fields ~files ())))
     outputs
 
@@ -478,6 +478,6 @@ let () =
         test_case "absolute_path" `Quick test_tm402_absolute_path;
         test_case "dot_and_dotdot_path" `Quick test_tm402_dot_and_dotdot_path;
 
-        test_case "tree_md_component" `Quick test_tm402_tree_md_component;
+        test_case "tree_of_md_component" `Quick test_tm402_tree_of_md_component;
       ]
     ]

@@ -1,12 +1,12 @@
-# tree-md
+# tree_of_md
 
-[![CI](https://github.com/ryoryoryo3838/tree-md/actions/workflows/ci.yml/badge.svg)](https://github.com/ryoryoryo3838/tree-md/actions/workflows/ci.yml)
+[![CI](https://github.com/ryoryoryo3838/tree_of_md/actions/workflows/ci.yml/badge.svg)](https://github.com/ryoryoryo3838/tree_of_md/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![OCaml](https://img.shields.io/badge/OCaml-%3E%3D5.3.0-ec6813.svg)](https://ocaml.org)
 
 **ノートは Markdown で書き、[Forester](https://www.forester-notes.org/) で公開する。**
 
-`tree-md` は厳格な Markdown 方言（`.tree.md`）を決定的な Forester `.tree`
+`tree_of_md` は厳格な Markdown 方言（`.tree.md`）を決定的な Forester `.tree`
 ソースへコンパイルします。見出しは入れ子の subtree に、Obsidian 形式の
 Wiki リンクと埋め込みは tree 参照とトランスクルージョンになり、生成される
 ファイルはすべてマニフェスト管理・ハッシュ検証済みで、バイト単位で再現可能です。
@@ -22,8 +22,8 @@ Forester はハイパーテキストによる数学的文章のための優れ�
 リポジトリで Markdown によるノートを運用しているなら、それを捨てるか、二重に
 管理するかの選択を迫られます。
 
-`tree-md` は Markdown を唯一の情報源（source of truth）のままにします。
-`.tree.md` ファイルを通常の Markdown ツールで編集し、`tree-md build` が
+`tree_of_md` は Markdown を唯一の情報源（source of truth）のままにします。
+`.tree.md` ファイルを通常の Markdown ツールで編集し、`tree_of_md_legacy build` が
 Forester の読む `.tree` ファイルを生成します。
 
 本ツールは意図的に **厳格** です。忠実に変換できない Markdown は、黙って
@@ -39,7 +39,7 @@ Forester の読む `.tree` ファイルを生成します。
 同じコード・範囲・抜粋を持ちますが、終了コードを変えることはなく、ビルドの
 書き込みを止めることもありません。
 
-`tree-md` は Forester から独立しています。Forester のコードはリンクされません。
+`tree_of_md` は Forester から独立しています。Forester のコードはリンクされません。
 対象は `forester-6.0-dev` ブランチのコミット
 `30b73641cef02433ee158db6ddc77f7b49de60be` のソース言語と CLI 挙動です。
 
@@ -99,19 +99,19 @@ A [[wiki-link]] and math $x^2$.
 
 - OCaml 5.3.0 以上
 - Dune 3.22 以上
-- Forester 6.0-dev（生成された tree のレンダリング用。`tree-md` の実行には不要）
+- Forester 6.0-dev（生成された tree のレンダリング用。`tree_of_md` の実行には不要）
 
 ## インストール
 
 ### opam でソースから
 
 ```bash
-git clone https://github.com/ryoryoryo3838/tree-md.git
-cd tree-md
+git clone https://github.com/ryoryoryo3838/tree_of_md.git
+cd tree_of_md
 opam install .
 ```
 
-opam switch に `tree-md` 実行ファイルがインストールされます。
+opam switch に `tree_of_md_legacy` と `tree_of_md` の実行ファイルがインストールされます。
 
 ### Dune パッケージ管理でソースから
 
@@ -119,10 +119,10 @@ opam switch に `tree-md` 実行ファイルがインストールされます。
 [`dune.lock/`](./dune.lock) に固定しています。opam switch は不要です。
 
 ```bash
-git clone https://github.com/ryoryoryo3838/tree-md.git
-cd tree-md
+git clone https://github.com/ryoryoryo3838/tree_of_md.git
+cd tree_of_md
 dune build           # 固定された閉包を取得してビルド
-dune exec -- tree-md --version
+dune exec -- tree_of_md_legacy --version
 ```
 
 ### devbox で
@@ -137,20 +137,20 @@ dune build
 
 ## クイックスタート
 
-`tree-md` のワークスペースは Forester の forest と並べて配置します。
+`tree_of_md` のワークスペースは Forester の forest と並べて配置します。
 次のレイアウトを作成してください。
 
 ```text
 my-forest/
 ├── forest.toml          # Forester 自体の設定
-├── tree-md.toml         # tree-md の設定
+├── tree_of_md.toml         # tree_of_md の設定
 ├── trees-md/            # 自分で書く Markdown ソース
 │   └── index.tree.md
 ├── trees/               # 手書きの .tree ファイル（任意）
-└── generated/           # tree-md の出力先 — 手で編集しないこと
+└── generated/           # tree_of_md の出力先 — 手で編集しないこと
 ```
 
-**1. `tree-md.toml` を設定する:**
+**1. `tree_of_md.toml` を設定する:**
 
 ```toml
 version = 1
@@ -189,14 +189,14 @@ This is my first tree.
 **4. ビルドする:**
 
 ```console
-$ tree-md build
+$ tree_of_md_legacy build
 build: 1 created, 0 replaced, 0 deleted, 0 unchanged
 
-$ tree-md check          # 読み取り専用。生成状態がクリーンか確認する
+$ tree_of_md_legacy check          # 読み取り専用。生成状態がクリーンか確認する
 $ forester build forest.toml
 ```
 
-`tree-md build` が `generated/index.tree` を書き出し、`forester build` が
+`tree_of_md_legacy build` が `generated/index.tree` を書き出し、`forester build` が
 forest 全体をサイトに変換します。
 
 ---
@@ -230,7 +230,7 @@ YAML フロントマターは任意です。使う場合はファイル先頭に
 また、**マッピング**にパースされる必要があります。
 
 **どんなキーを書いても構いません。** mdbase v0.3 §03 が定めるとおり、
-フロントマターは任意のマッピングです。以下の表は `tree-md` が*解釈する*部分で
+フロントマターは任意のマッピングです。以下の表は `tree_of_md` が*解釈する*部分で
 あり、それ以外のキーは保持されるだけで、どこにも出力されません。Obsidian の
 vault は `aliases`・`cssclasses`・`created`・`publish` で溢れていますが、
 どれもこのコンパイラの関知するところではありません。
@@ -274,7 +274,7 @@ external   slides        video   bibtex   author  toc     lang
 
 ### 解釈されないキー
 
-`tree-md` が解釈しないキーは、**拒否されず保持されます**。どこにも出力されず、
+`tree_of_md` が解釈しないキーは、**拒否されず保持されます**。どこにも出力されず、
 何も失敗させません。
 
 唯一の例外は、既知のキーから1〜2編集の距離にあるキーです。`taxo:` はプロパティ
@@ -295,7 +295,7 @@ mdbase が私的用途に予約している `x-` 名前空間のキーは、何�
 
 ### アドレスの発番
 
-`id` を書かない tree には `tree-md build` がアドレスを与えます。方式は Forester
+`id` を書かない tree には `tree_of_md_legacy build` がアドレスを与えます。方式は Forester
 自身が文書化している規約 — base-36 の数、ゼロ埋め4桁 — に従い、設定できます。
 
 ```toml
@@ -311,7 +311,7 @@ mint     = "build"  # "off" にすると、要求を別の道具に委ねる
 何に何を与えたかを報告します。
 
 ```console
-$ tree-md build
+$ tree_of_md_legacy build
 minted: /home/you/my-forest/trees-md/scratch.tree.md -> V0YI
 build: 1 created, 0 replaced, 0 deleted, 2 unchanged
 ```
@@ -749,14 +749,14 @@ assets/vault/DAILY/assets/CYCL-01.jpg   このビルドが所有するコピー
 が橋渡しをするのかを述べます。存在しない場所を探させるためではなく:
 
 ```console
-$ tree-md build
+$ tree_of_md_legacy build
 TM203: error: missing asset "CYCL-01.jpg"
   --> trees-md/DAILY/CYCL.tree.md:6:1
    |
    | ![[CYCL-01.jpg]]
    | ^^^^^^^^^^^^^^^^
   note: the vault keeps it at trees-md/DAILY/assets/CYCL-01.jpg, which is not
-        under an asset root; `[assets].into` in tree-md.toml says where an
+        under an asset root; `[assets].into` in tree_of_md.toml says where an
         attachment a published tree embeds is copied to
 ```
 
@@ -855,8 +855,8 @@ Forester にとって構文的に意味を持つ文字は、リテラルテキ�
 ## CLI リファレンス
 
 ```text
-tree-md check [--config PATH]
-tree-md build [--config PATH]
+tree_of_md_legacy check [--config PATH]
+tree_of_md_legacy build [--config PATH]
 ```
 
 | コマンド | 挙動 |
@@ -864,7 +864,7 @@ tree-md build [--config PATH]
 | `check` | forest 全体を検証し、生成状態の問題を報告する。**ファイルは一切書き込まない**。生成状態がクリーンなときのみ 0 で終了する |
 | `build` | まず検証し、その後トランザクショナルに生成物を同期する |
 
-`--config PATH` の既定値は `./tree-md.toml` で、カレントディレクトリから厳密に
+`--config PATH` の既定値は `./tree_of_md.toml` で、カレントディレクトリから厳密に
 読み込みます。**親ディレクトリは探索しません。**
 
 ### 終了コード
@@ -879,7 +879,7 @@ tree-md build [--config PATH]
 
 | 変数 | 効果 |
 | --- | --- |
-| `TREE_MD_BACKTRACE=1` | 内部エラー時に OCaml のバックトレースを表示する |
+| `TREE_OF_MD_BACKTRACE=1` | 内部エラー時に OCaml のバックトレースを表示する |
 
 ## 設定
 
@@ -905,7 +905,7 @@ target  = "forester-6.0-dev@30b73641cef02433ee158db6ddc77f7b49de60be"
 トップレベルの5つのキーは必須で、`[id]` と `[assets]` を含めてキー集合は閉じて
 います。未知のキーは黙って無視される設定ではなく `TM401` になります。
 
-すべてのパスは `tree-md.toml` を含むディレクトリからの相対です。参照される
+すべてのパスは `tree_of_md.toml` を含むディレクトリからの相対です。参照される
 `forest.toml` が `[forest].trees` と `[forest].assets` を供給し、これらは
 `forest.toml` を含むディレクトリからの相対です。正規化された出力ルートは
 `[forest].trees` に含まれていなければなりません。
@@ -942,7 +942,7 @@ DAILY/2026-08-19.tree.md      どちらでもない: コンパイルされない
 消えることはありません。
 
 ```console
-$ tree-md build
+$ tree_of_md_legacy build
 build: 10 created, 0 replaced, 0 deleted, 0 unchanged, 34 unpublished
 ```
 
@@ -953,9 +953,9 @@ build: 10 created, 0 replaced, 0 deleted, 0 unchanged, 34 unpublished
 tree をすべて削除します。
 
 ```console
-$ tree-md build
-TM401: warning: /home/you/site/tree-md.toml: publish.from matched none of the 7 sources, so nothing is published
-  --> /home/you/site/tree-md.toml
+$ tree_of_md_legacy build
+TM401: warning: /home/you/site/tree_of_md.toml: publish.from matched none of the 7 sources, so nothing is published
+  --> /home/you/site/tree_of_md.toml
   note: its patterns are matched against the path of a source below its source root, with the root itself spent
 build: 0 created, 0 replaced, 7 deleted, 0 unchanged, 7 unpublished
 ```
@@ -974,11 +974,11 @@ build: 0 created, 0 replaced, 7 deleted, 0 unchanged, 7 unpublished
 ## mdbase
 
 forest は [mdbase](https://github.com/mdbase-dev/mdbase-spec) のコレクション
-でもあり、`tree-md` はコレクションが宣言した内容を読みます。どれも必須では
+でもあり、`tree_of_md` はコレクションが宣言した内容を読みます。どれも必須では
 ありません。`mdbase.yaml` も `_types/` も無い forest は、それらが存在する前と
 まったく同じように振る舞います。
 
-`tree-md` が対象とするのは **mdbase v0.3.0** で、Forester のターゲットと同じ
+`tree_of_md` が対象とするのは **mdbase v0.3.0** で、Forester のターゲットと同じ
 やり方でピン留めしています。メジャーが 0 の間はマイナーが互換境界なので、
 `0.2.x` や `0.4.x` を宣言するコレクションは、このビルドが対応するバージョンを
 明示したメッセージとともに拒否されます。
@@ -1004,7 +1004,7 @@ settings:
 
 未知のキーは §04 の要求どおり**警告**で、読み込みは続行します。
 `record_extensions`・`include_subfolders`・`exclude` はここでは何も決めません
-（`tree-md` は `tree-md.toml` の `sources` 配下の `.tree.md` をコンパイルします）
+（`tree_of_md` は `tree_of_md.toml` の `sources` 配下の `.tree.md` をコンパイルします）
 ので、設定した場合は黙って無効になるのではなく、その旨を報告します。
 
 ### 型ファイル
@@ -1040,7 +1040,7 @@ collection:
 ```
 
 スキーマは**書かれたままの**フロントマターを検証し、違反は mdbase の正規
-コードを `tree-md` 自身のコードと併記して報告されます。
+コードを `tree_of_md` 自身のコードと併記して報告されます。
 
 ```console
 TM101 (schema_enum): error: /status: must be one of "draft", "published" (type "note")
@@ -1073,21 +1073,21 @@ JSON Schema のプロファイルは §06 の必須リストちょうどです�
 型ファイル自身のセクションにも同じ規則が働きます。`match.path_glob`・
 `match.fields_present`・`match.where`・`collection.read_defaults`・
 `collection.display`、および `x-` 拡張は対応しています。以下は拒否され、
-それぞれ `tree-md` が代わりに何をしているかを述べます。
+それぞれ `tree_of_md` が代わりに何をしているかを述べます。
 
 | セクション | 理由 |
 | --- | --- |
-| `collection.unique` | `tree-md` は forest 全体でアドレスの一意性を自分で強制し、衝突は `TM201` |
+| `collection.unique` | `tree_of_md` は forest 全体でアドレスの一意性を自分で強制し、衝突は `TM201` |
 | `collection.links` | 参照はすべて閉世界で解決済みで、未解決は `TM202` |
 | `collection.path` | 出力は tree のアドレスで命名される |
-| `collection.projections`・`match.expr` | CEL プロファイルが必要だが `tree-md` は実装していない（`unsupported_profile`） |
-| `lifecycle` | アドレスは `tree-md.toml` の `[id]` ポリシーから発番される |
-| `runtime`・`migrations`・`implements` | `tree-md` はワークフローを実行せず、移行もせず、データコントラクトも読まない |
+| `collection.projections`・`match.expr` | CEL プロファイルが必要だが `tree_of_md` は実装していない（`unsupported_profile`） |
+| `lifecycle` | アドレスは `tree_of_md.toml` の `[id]` ポリシーから発番される |
+| `runtime`・`migrations`・`implements` | `tree_of_md` はワークフローを実行せず、移行もせず、データコントラクトも読まない |
 
-### tree-md 自身の読み取りは別のもの
+### tree_of_md 自身の読み取りは別のもの
 
 宣言されたスキーマが述べるのは、*コレクション*が何を妥当なレコードと見なすか
-です。`tree-md` はそれとは別に、自分が出力するキー（`id`・`date`・`taxon`・
+です。`tree_of_md` はそれとは別に、自分が出力するキー（`id`・`date`・`taxon`・
 `authors`・`contributors`・`tags`・`meta`）を読みます。それらについて報告する
 内容は、妥当性ではなく `.tree` に何を書けるかの話です。したがって使えない
 `date:` は `validation: off` でもエラーのままです。どちらにせよ出力できる
@@ -1099,14 +1099,14 @@ JSON Schema のプロファイルは §06 の必須リストちょうどです�
 強制されます。
 
 - **マニフェストが所有するファイルのみを管理します。** `build` が作成・置換・
-  削除するのは、直前のマニフェスト（`<output>/.tree-md-manifest.json`）に
+  削除するのは、直前のマニフェスト（`<output>/.tree_of_md-manifest.json`）に
   記載されたファイルだけです。未知のファイルが削除されることはありません。
   未知のファイルが出力予定のパスを占有している場合は、上書きせずビルドを失敗させます。
 - **管理対象はマニフェストが名指したものです。** マニフェスト内のパスはすべて
-  `tree-md.toml` を含むディレクトリからの相対で書かれるので、1つのマニフェスト
+  `tree_of_md.toml` を含むディレクトリからの相対で書かれるので、1つのマニフェスト
   が出力ルート配下の tree と、アセットルート配下にコピーされた添付の両方を所有
   できます。ソースルート配下のファイルを名指すことは決してなく、名指している
-  マニフェストは削除ではなく `TM402` になります。古い `tree-md` が書いた
+  マニフェストは削除ではなく `TM402` になります。古い `tree_of_md` が書いた
   マニフェスト（format 1。出力を出力ルート配下の名前で書く）は拒否されず、
   読み込まれて書き直されます。
 - **手動変更を保護します。** 管理下のファイルを置換・削除する前に、`build` は
@@ -1118,7 +1118,7 @@ JSON Schema のプロファイルは §06 の必須リストちょうどです�
   プロセスがある場合は終了コード 2 の並行性エラーです。
 - **中断されたビルドはロールフォワードされます。** ステージされたバイト列を
   すべて書き込み flush した後にプリコミットジャーナル
-  （`<output>/.tree-md-transaction.json`）を設置します。コミットが中断された後、
+  （`<output>/.tree_of_md-transaction.json`）を設置します。コミットが中断された後、
   `check` は書き込みを行わずに不完全な状態（`TM305`）を報告し、次の `build` が
   書き込みロックの下でハッシュ検証つきロールフォワードを実行します。
 - **耐久性の前提。** クラッシュ保証は、同一ファイルシステム内のアトミックな
@@ -1185,7 +1185,7 @@ JSON Schema のプロファイルは §06 の必須リストちょうどです�
 例:
 
 ```console
-$ tree-md build
+$ tree_of_md_legacy build
 TM003: error: file begins with a UTF-8 byte order mark; remove it
   --> trees-md/index.tree.md:1:1
    |
@@ -1214,7 +1214,7 @@ dune pkg lock           # 固定された依存閉包を更新
 
 ## コントリビューション
 
-Issue と Pull Request は <https://github.com/ryoryoryo3838/tree-md> で歓迎します。
+Issue と Pull Request は <https://github.com/ryoryoryo3838/tree_of_md> で歓迎します。
 
 本コンパイラの価値は出力が厳密であることそのものにあるため、出力挙動を変える
 変更には必ずテストを追加してください。`test/fixtures/markdown/` と

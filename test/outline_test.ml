@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 (* Each compile stage now returns its warnings alongside the value it
    produced. These suites assert on the value, so they drop the warnings. *)

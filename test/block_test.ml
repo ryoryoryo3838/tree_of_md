@@ -1,5 +1,5 @@
 let source_from_string text =
-  Result.get_ok (Tree_md.Source.of_string ~path:"test.md" text)
+  Result.get_ok (Tree_of_md_legacy.Source.of_string ~path:"test.md" text)
 
 let mask_all text = text
 
@@ -7,86 +7,86 @@ let mask_all text = text
    produced. These suites assert on the value, so they drop the warnings. *)
 let parse text =
   let src = source_from_string text in
-  Tree_md.Markdown.parse src ~masked_markdown: text Tree_md.Metadata.empty
+  Tree_of_md_legacy.Markdown.parse src ~masked_markdown: text Tree_of_md_legacy.Metadata.empty
   |> Result.map fst
 
 let parse_result text =
   let src = source_from_string text in
-  Tree_md.Markdown.parse src ~masked_markdown: text Tree_md.Metadata.empty
+  Tree_of_md_legacy.Markdown.parse src ~masked_markdown: text Tree_of_md_legacy.Metadata.empty
   |> Result.map fst
 
 let has_diag_code diags code =
-  List.exists (fun d -> Tree_md.Diagnostic.code_string d.Tree_md.Diagnostic.code = code) diags
+  List.exists (fun d -> Tree_of_md_legacy.Diagnostic.code_string d.Tree_of_md_legacy.Diagnostic.code = code) diags
 
 let rec node_to_string = function
-  | Tree_md.Ir.Text s -> Printf.sprintf "Text(%S)" s
-  | Tree_md.Ir.Emphasis _ -> "Emphasis"
-  | Tree_md.Ir.Strong _ -> "Strong"
-  | Tree_md.Ir.Code s -> Printf.sprintf "Code(%S)" s
-  | Tree_md.Ir.Link { label = lbl; destination = d; title = _ } ->
-    let label_str = String.concat " " (List.map (fun i -> node_to_string i.Tree_md.Ir.node) lbl) in
+  | Tree_of_md_legacy.Ir.Text s -> Printf.sprintf "Text(%S)" s
+  | Tree_of_md_legacy.Ir.Emphasis _ -> "Emphasis"
+  | Tree_of_md_legacy.Ir.Strong _ -> "Strong"
+  | Tree_of_md_legacy.Ir.Code s -> Printf.sprintf "Code(%S)" s
+  | Tree_of_md_legacy.Ir.Link { label = lbl; destination = d; title = _ } ->
+    let label_str = String.concat " " (List.map (fun i -> node_to_string i.Tree_of_md_legacy.Ir.node) lbl) in
     Printf.sprintf "Link(%S)[%s]" d label_str
-  | Tree_md.Ir.Image { alt = a; destination = d; title = _ } ->
-    let alt_str = String.concat " " (List.map (fun i -> node_to_string i.Tree_md.Ir.node) a) in
+  | Tree_of_md_legacy.Ir.Image { alt = a; destination = d; title = _ } ->
+    let alt_str = String.concat " " (List.map (fun i -> node_to_string i.Tree_of_md_legacy.Ir.node) a) in
     Printf.sprintf "Image(%S)[%s]" d alt_str
-  | Tree_md.Ir.Wiki_link { target = t; alias = a } ->
+  | Tree_of_md_legacy.Ir.Wiki_link { target = t; alias = a } ->
     let alias_str = match a with None -> "" | Some s -> Printf.sprintf " alias=%S" s in
     Printf.sprintf "WikiLink(%S%s)" t alias_str
-  | Tree_md.Ir.Wiki_embed t -> Printf.sprintf "WikiEmbed(%S)" t
-  | Tree_md.Ir.Math { tex = t; display = d } ->
+  | Tree_of_md_legacy.Ir.Wiki_embed t -> Printf.sprintf "WikiEmbed(%S)" t
+  | Tree_of_md_legacy.Ir.Math { tex = t; display = d } ->
     Printf.sprintf "Math(%S %b)" t d
-  | Tree_md.Ir.Strikethrough _ -> "Strikethrough"
-  | Tree_md.Ir.Highlight _ -> "Highlight"
-  | Tree_md.Ir.Footnote_ref { label; number } ->
+  | Tree_of_md_legacy.Ir.Strikethrough _ -> "Strikethrough"
+  | Tree_of_md_legacy.Ir.Highlight _ -> "Highlight"
+  | Tree_of_md_legacy.Ir.Footnote_ref { label; number } ->
     Printf.sprintf "FootnoteRef(%S %d)" label number
-  | Tree_md.Ir.Hard_break -> "HardBreak"
-  | Tree_md.Ir.Soft_break -> "SoftBreak"
+  | Tree_of_md_legacy.Ir.Hard_break -> "HardBreak"
+  | Tree_of_md_legacy.Ir.Soft_break -> "SoftBreak"
 
 let block_node_to_string = function
-  | Tree_md.Ir.Paragraph inlines ->
-    let parts = List.map (fun i -> node_to_string i.Tree_md.Ir.node) inlines in
+  | Tree_of_md_legacy.Ir.Paragraph inlines ->
+    let parts = List.map (fun i -> node_to_string i.Tree_of_md_legacy.Ir.node) inlines in
     Printf.sprintf "Paragraph[%s]" (String.concat " " parts)
-  | Tree_md.Ir.Blockquote _ -> "Blockquote"
-  | Tree_md.Ir.List { kind; tight; items } ->
+  | Tree_of_md_legacy.Ir.Blockquote _ -> "Blockquote"
+  | Tree_of_md_legacy.Ir.List { kind; tight; items } ->
     let kind_str = match kind with
-      | Tree_md.Ir.Unordered -> "Unordered"
-      | Tree_md.Ir.Ordered n -> Printf.sprintf "Ordered(%d)" n
+      | Tree_of_md_legacy.Ir.Unordered -> "Unordered"
+      | Tree_of_md_legacy.Ir.Ordered n -> Printf.sprintf "Ordered(%d)" n
     in
     let tight_str = if tight then "tight" else "loose" in
     Printf.sprintf "List(%s %s %d items)" kind_str tight_str (List.length items)
-  | Tree_md.Ir.Code_block { info; code } ->
+  | Tree_of_md_legacy.Ir.Code_block { info; code } ->
     let info_str = match info with
-      | Tree_md.Ir.No_info -> "NoInfo"
-      | Tree_md.Ir.Language lang -> Printf.sprintf "Lang(%S)" lang
+      | Tree_of_md_legacy.Ir.No_info -> "NoInfo"
+      | Tree_of_md_legacy.Ir.Language lang -> Printf.sprintf "Lang(%S)" lang
     in
     Printf.sprintf "CodeBlock(%s %S)" info_str code
-  | Tree_md.Ir.Card_link card ->
+  | Tree_of_md_legacy.Ir.Card_link card ->
     let optional = function Some value -> value | None -> "-" in
     Printf.sprintf "Card(%S %S %S %S %S %S)"
-      card.Tree_md.Ir.card_url card.Tree_md.Ir.card_title
-      (optional card.Tree_md.Ir.card_description)
-      (optional card.Tree_md.Ir.card_host)
-      (optional card.Tree_md.Ir.card_image)
-      (optional card.Tree_md.Ir.card_favicon)
-  | Tree_md.Ir.Thematic_break -> "ThematicBreak"
-  | Tree_md.Ir.Heading { level; title } ->
-    let parts = List.map (fun i -> node_to_string i.Tree_md.Ir.node) title in
+      card.Tree_of_md_legacy.Ir.card_url card.Tree_of_md_legacy.Ir.card_title
+      (optional card.Tree_of_md_legacy.Ir.card_description)
+      (optional card.Tree_of_md_legacy.Ir.card_host)
+      (optional card.Tree_of_md_legacy.Ir.card_image)
+      (optional card.Tree_of_md_legacy.Ir.card_favicon)
+  | Tree_of_md_legacy.Ir.Thematic_break -> "ThematicBreak"
+  | Tree_of_md_legacy.Ir.Heading { level; title } ->
+    let parts = List.map (fun i -> node_to_string i.Tree_of_md_legacy.Ir.node) title in
     Printf.sprintf "Heading(%d)[%s]" level (String.concat " " parts)
-  | Tree_md.Ir.Subtree_directive id -> Printf.sprintf "Subtree(%S)" id
-  | Tree_md.Ir.Subtree_open { level; id } ->
+  | Tree_of_md_legacy.Ir.Subtree_directive id -> Printf.sprintf "Subtree(%S)" id
+  | Tree_of_md_legacy.Ir.Subtree_open { level; id } ->
     Printf.sprintf "SubtreeOpen(%d,%s)" level
       (match id with Some i -> Printf.sprintf "%S" i | None -> "-")
-  | Tree_md.Ir.Subtree_close level -> Printf.sprintf "SubtreeClose(%d)" level
-  | Tree_md.Ir.Block_embed id -> Printf.sprintf "Embed(%S)" id
-  | Tree_md.Ir.Display_math tex -> Printf.sprintf "DisplayMath(%S)" tex
-  | Tree_md.Ir.Table { alignment; header; rows } ->
+  | Tree_of_md_legacy.Ir.Subtree_close level -> Printf.sprintf "SubtreeClose(%d)" level
+  | Tree_of_md_legacy.Ir.Block_embed id -> Printf.sprintf "Embed(%S)" id
+  | Tree_of_md_legacy.Ir.Display_math tex -> Printf.sprintf "DisplayMath(%S)" tex
+  | Tree_of_md_legacy.Ir.Table { alignment; header; rows } ->
     Printf.sprintf "Table(%d cols, header=%b, %d rows)"
       (List.length alignment) (header <> None) (List.length rows)
-  | Tree_md.Ir.Callout { kind; folded; title = _; body } ->
+  | Tree_of_md_legacy.Ir.Callout { kind; folded; title = _; body } ->
     Printf.sprintf "Callout(%S folded=%b %d blocks)" kind folded (List.length body)
-  | Tree_md.Ir.Footnote_def { label; body } ->
+  | Tree_of_md_legacy.Ir.Footnote_def { label; body } ->
     Printf.sprintf "FootnoteDef(%S %d blocks)" label (List.length body)
-  | Tree_md.Ir.Footnotes entries ->
+  | Tree_of_md_legacy.Ir.Footnotes entries ->
     Printf.sprintf "Footnotes(%d)" (List.length entries)
 
 (* ── Basic block fixtures ── *)
@@ -99,7 +99,7 @@ let test_paragraph () =
       "Paragraph[Text(\"hello world\")]"
       (block_node_to_string (List.hd doc.blocks).bnode)
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_blockquote () =
@@ -113,147 +113,147 @@ let test_blockquote () =
          (block_node_to_string b.bnode)
      | _ -> Alcotest.fail "expected one block")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_nested_blockquote () =
   match parse "> > nested" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Blockquote inner; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.Blockquote inner; _ }] ->
        (match inner with
-        | [{ bnode = Tree_md.Ir.Blockquote _; _ }] -> ()
+        | [{ bnode = Tree_of_md_legacy.Ir.Blockquote _; _ }] -> ()
         | _ -> Alcotest.fail "expected nested blockquote")
      | _ -> Alcotest.fail "expected Blockquote")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_tight_list () =
   match parse "- a\n- b" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.List { tight = true; items; _ }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.List { tight = true; items; _ }; _ }] ->
        Alcotest.(check int) "two items" 2 (List.length items)
      | _ -> Alcotest.fail "expected tight list")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_loose_list () =
   match parse "- a\n\n- b" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.List { tight = false; items; _ }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.List { tight = false; items; _ }; _ }] ->
        Alcotest.(check int) "two items" 2 (List.length items)
      | _ -> Alcotest.fail "expected loose list")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_nested_list () =
   match parse "- a\n  - b" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.List { items; _ }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.List { items; _ }; _ }] ->
        (match items with
         | [item] ->
           (match item.item_blocks with
-           | [{ bnode = Tree_md.Ir.Paragraph _; _ };
-              { bnode = Tree_md.Ir.List _; _ }] -> ()
+           | [{ bnode = Tree_of_md_legacy.Ir.Paragraph _; _ };
+              { bnode = Tree_of_md_legacy.Ir.List _; _ }] -> ()
            | _ -> Alcotest.fail "expected paragraph then nested list in item")
         | _ -> Alcotest.fail "expected one list item")
      | _ -> Alcotest.fail "expected List")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_ordered_start_1 () =
   match parse "1. a\n2. b" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.List { kind = Tree_md.Ir.Ordered 1; items; _ }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.List { kind = Tree_of_md_legacy.Ir.Ordered 1; items; _ }; _ }] ->
        Alcotest.(check int) "two items" 2 (List.length items)
      | _ -> Alcotest.fail "expected Ordered(1)")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_ordered_start_7 () =
   match parse "7. a\n8. b" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.List { kind = Tree_md.Ir.Ordered 7; items; _ }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.List { kind = Tree_of_md_legacy.Ir.Ordered 7; items; _ }; _ }] ->
        Alcotest.(check int) "two items" 2 (List.length items)
      | _ -> Alcotest.fail "expected Ordered(7)")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_indented_code () =
   match parse "    code" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Code_block { info = Tree_md.Ir.No_info; code }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.Code_block { info = Tree_of_md_legacy.Ir.No_info; code }; _ }] ->
        Alcotest.(check string) "indented code" "code" code
      | _ -> Alcotest.fail "expected CodeBlock")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_fenced_code_no_lang () =
   match parse "```\ncode\n```" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Code_block { info = Tree_md.Ir.No_info; code }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.Code_block { info = Tree_of_md_legacy.Ir.No_info; code }; _ }] ->
        Alcotest.(check string) "fenced no lang" "code" code
      | _ -> Alcotest.fail "expected CodeBlock")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_fenced_code_ocaml () =
   match parse "```ocaml\nlet x = 1\n```" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Code_block { info = Tree_md.Ir.Language "ocaml"; code }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.Code_block { info = Tree_of_md_legacy.Ir.Language "ocaml"; code }; _ }] ->
        Alcotest.(check string) "fenced ocaml" "let x = 1" code
      | _ -> Alcotest.fail "expected CodeBlock")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_thematic_break () =
   match parse "---" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Thematic_break; _ }] -> ()
+     | [{ bnode = Tree_of_md_legacy.Ir.Thematic_break; _ }] -> ()
      | _ -> Alcotest.fail "expected ThematicBreak")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_atx_heading () =
   match parse "# Title" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Heading { level = 1; title; _ }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.Heading { level = 1; title; _ }; _ }] ->
        Alcotest.(check string) "atx heading"
          "Heading(1)[Text(\"Title\")]"
          (block_node_to_string (List.hd doc.blocks).bnode)
      | _ -> Alcotest.fail "expected Heading(1)")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_setext_heading () =
   match parse "Title\n===" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Heading { level = 1; _ }; _ }] -> ()
+     | [{ bnode = Tree_of_md_legacy.Ir.Heading { level = 1; _ }; _ }] -> ()
      | _ -> Alcotest.fail "expected Heading(1)")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_comment_discarded () =
@@ -261,7 +261,7 @@ let test_comment_discarded () =
   | Ok doc ->
     Alcotest.(check int) "two blocks (comment discarded)" 2 (List.length doc.blocks)
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 (* ── Subtree directive ── *)
@@ -270,19 +270,19 @@ let test_subtree_directive () =
   match parse "<!-- subtree: my.tree -->" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Subtree_directive "my.tree"; _ }] -> ()
+     | [{ bnode = Tree_of_md_legacy.Ir.Subtree_directive "my.tree"; _ }] -> ()
      | _ -> Alcotest.fail "expected Subtree_directive")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 (* ── Subtree open/close directives ── *)
 
 let directive_nodes text =
   match parse text with
-  | Ok doc -> Ok (List.map (fun b -> block_node_to_string b.Tree_md.Ir.bnode) doc.blocks)
+  | Ok doc -> Ok (List.map (fun b -> block_node_to_string b.Tree_of_md_legacy.Ir.bnode) doc.blocks)
   | Error diags ->
-    Error (List.map (fun d -> Tree_md.Diagnostic.code_string d.Tree_md.Diagnostic.code) diags)
+    Error (List.map (fun d -> Tree_of_md_legacy.Diagnostic.code_string d.Tree_of_md_legacy.Diagnostic.code) diags)
 
 let check_nodes name expected text =
   match directive_nodes text with
@@ -352,8 +352,8 @@ let test_subtree_directive_invalid_id () =
   match parse "<!-- subtree: bad id -->" with
   | Ok doc ->
     let has_directive = List.exists (fun b ->
-      match b.Tree_md.Ir.bnode with
-      | Tree_md.Ir.Subtree_directive _ -> true
+      match b.Tree_of_md_legacy.Ir.bnode with
+      | Tree_of_md_legacy.Ir.Subtree_directive _ -> true
       | _ -> false) doc.blocks in
     Alcotest.(check bool) "no Subtree_directive block for invalid id" false has_directive
   | Error diags ->
@@ -365,10 +365,10 @@ let test_embed_normalization () =
   match parse "![[note]]" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Block_embed "note"; _ }] -> ()
+     | [{ bnode = Tree_of_md_legacy.Ir.Block_embed "note"; _ }] -> ()
      | _ -> Alcotest.fail "expected Embed")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 (* `id` names a subtree just as it names a tree in front matter. Before it was
@@ -378,15 +378,15 @@ let test_id_directive () =
   | Ok doc ->
     let named =
       List.exists
-        (fun (b : Tree_md.Ir.block) ->
-          match b.Tree_md.Ir.bnode with
-          | Tree_md.Ir.Subtree_directive "my-sec" -> true
+        (fun (b : Tree_of_md_legacy.Ir.block) ->
+          match b.Tree_of_md_legacy.Ir.bnode with
+          | Tree_of_md_legacy.Ir.Subtree_directive "my-sec" -> true
           | _ -> false)
-        doc.Tree_md.Ir.blocks
+        doc.Tree_of_md_legacy.Ir.blocks
     in
     Alcotest.(check bool) "id names the subtree" true named
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_id_directive_needs_identifier () =
@@ -398,22 +398,22 @@ let test_id_directive_needs_identifier () =
 
 let expect_blocks name text =
   match parse text with
-  | Ok doc -> doc.Tree_md.Ir.blocks
+  | Ok doc -> doc.Tree_of_md_legacy.Ir.blocks
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail (name ^ ": " ^ msgs)
 
 (* An anchor ending a heading names the subtree that heading opens — the one
    spelling Obsidian and Forester both understand. *)
 let test_heading_anchor_names_subtree () =
   match expect_blocks "heading anchor" "# Root\n\n## Named ^my-sec\n\nbody\n" with
-  | [ { bnode = Tree_md.Ir.Heading _; _ };
-      { bnode = Tree_md.Ir.Subtree_directive "my-sec"; _ };
-      { bnode = Tree_md.Ir.Heading { title = [ { node = Tree_md.Ir.Text "Named"; _ } ]; _ }; _ };
-      { bnode = Tree_md.Ir.Paragraph _; _ } ] -> ()
+  | [ { bnode = Tree_of_md_legacy.Ir.Heading _; _ };
+      { bnode = Tree_of_md_legacy.Ir.Subtree_directive "my-sec"; _ };
+      { bnode = Tree_of_md_legacy.Ir.Heading { title = [ { node = Tree_of_md_legacy.Ir.Text "Named"; _ } ]; _ }; _ };
+      { bnode = Tree_of_md_legacy.Ir.Paragraph _; _ } ] -> ()
   | blocks ->
     Alcotest.fail ("expected the anchor to name the subtree, got "
-      ^ String.concat ", " (List.map (fun (b : Tree_md.Ir.block) -> block_node_to_string b.Tree_md.Ir.bnode) blocks))
+      ^ String.concat ", " (List.map (fun (b : Tree_of_md_legacy.Ir.block) -> block_node_to_string b.Tree_of_md_legacy.Ir.bnode) blocks))
 
 (* Anchoring and the directive say the same thing, so saying both is the
    existing two-directives error rather than a silent winner. The clash is a
@@ -421,12 +421,12 @@ let test_heading_anchor_names_subtree () =
 let test_heading_anchor_and_directive_conflict () =
   match parse "# Root\n\n<!-- id: one -->\n## Named ^two\n\nbody\n" with
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected the document to parse, got: " ^ msgs)
   | Ok doc -> (
     match
       Result.map fst
-        (Tree_md.Outline.build ~root_id:"notes" ~filename:"notes" doc)
+        (Tree_of_md_legacy.Outline.build ~root_id:"notes" ~filename:"notes" doc)
     with
     | Ok _ -> Alcotest.fail "expected naming a subtree twice to be rejected"
     | Error diags -> Alcotest.(check bool) "has TM104" true (has_diag_code diags "TM104"))
@@ -436,28 +436,28 @@ let test_heading_anchor_and_directive_conflict () =
    anchor itself, so that is what the reference resolves to. *)
 let test_embed_subtree_anchor () =
   match expect_blocks "anchor embed" "![[notes#^aside]]" with
-  | [ { bnode = Tree_md.Ir.Block_embed "aside"; _ } ] -> ()
-  | blocks -> Alcotest.fail ("expected Block_embed \"aside\", got " ^ String.concat ", " (List.map (fun (b : Tree_md.Ir.block) -> block_node_to_string b.Tree_md.Ir.bnode) blocks))
+  | [ { bnode = Tree_of_md_legacy.Ir.Block_embed "aside"; _ } ] -> ()
+  | blocks -> Alcotest.fail ("expected Block_embed \"aside\", got " ^ String.concat ", " (List.map (fun (b : Tree_of_md_legacy.Ir.block) -> block_node_to_string b.Tree_of_md_legacy.Ir.bnode) blocks))
 
 let test_link_subtree_anchor () =
   match expect_blocks "anchor link" "see [[notes#^aside|the remark]]" with
-  | [ { bnode = Tree_md.Ir.Paragraph inlines; _ } ] ->
+  | [ { bnode = Tree_of_md_legacy.Ir.Paragraph inlines; _ } ] ->
     let found =
       List.exists
-        (fun (i : Tree_md.Ir.inline) ->
-          match i.Tree_md.Ir.node with
-          | Tree_md.Ir.Wiki_link { target = "aside"; alias = Some "the remark" } -> true
+        (fun (i : Tree_of_md_legacy.Ir.inline) ->
+          match i.Tree_of_md_legacy.Ir.node with
+          | Tree_of_md_legacy.Ir.Wiki_link { target = "aside"; alias = Some "the remark" } -> true
           | _ -> false)
         inlines
     in
     Alcotest.(check bool) "link resolves to the anchor" true found
-  | blocks -> Alcotest.fail ("expected a paragraph, got " ^ String.concat ", " (List.map (fun (b : Tree_md.Ir.block) -> block_node_to_string b.Tree_md.Ir.bnode) blocks))
+  | blocks -> Alcotest.fail ("expected a paragraph, got " ^ String.concat ", " (List.map (fun (b : Tree_of_md_legacy.Ir.block) -> block_node_to_string b.Tree_of_md_legacy.Ir.bnode) blocks))
 
 (* `[[#^id]]` names a subtree of the current note and is just as unambiguous. *)
 let test_same_note_anchor () =
   match expect_blocks "same-note anchor" "![[#^aside]]" with
-  | [ { bnode = Tree_md.Ir.Block_embed "aside"; _ } ] -> ()
-  | blocks -> Alcotest.fail ("expected Block_embed \"aside\", got " ^ String.concat ", " (List.map (fun (b : Tree_md.Ir.block) -> block_node_to_string b.Tree_md.Ir.bnode) blocks))
+  | [ { bnode = Tree_of_md_legacy.Ir.Block_embed "aside"; _ } ] -> ()
+  | blocks -> Alcotest.fail ("expected Block_embed \"aside\", got " ^ String.concat ", " (List.map (fun (b : Tree_of_md_legacy.Ir.block) -> block_node_to_string b.Tree_of_md_legacy.Ir.bnode) blocks))
 
 (* `#Heading` names a section, which has no Forester address of its own. *)
 let test_heading_fragment_rejected () =
@@ -468,20 +468,20 @@ let test_heading_fragment_rejected () =
 (* The anchor marks the block for the vault; it is not content. *)
 let test_block_anchor_stripped () =
   match expect_blocks "trailing anchor" "A remark. ^aside" with
-  | [ { bnode = Tree_md.Ir.Paragraph [ { node = Tree_md.Ir.Text "A remark."; _ } ]; _ } ] -> ()
-  | blocks -> Alcotest.fail ("expected the anchor and its space gone, got " ^ String.concat ", " (List.map (fun (b : Tree_md.Ir.block) -> block_node_to_string b.Tree_md.Ir.bnode) blocks))
+  | [ { bnode = Tree_of_md_legacy.Ir.Paragraph [ { node = Tree_of_md_legacy.Ir.Text "A remark."; _ } ]; _ } ] -> ()
+  | blocks -> Alcotest.fail ("expected the anchor and its space gone, got " ^ String.concat ", " (List.map (fun (b : Tree_of_md_legacy.Ir.block) -> block_node_to_string b.Tree_of_md_legacy.Ir.bnode) blocks))
 
 (* A caret that does not follow a space is arithmetic, not an anchor. *)
 let test_caret_in_text_kept () =
   match expect_blocks "caret in text" "the value x^2" with
-  | [ { bnode = Tree_md.Ir.Paragraph [ { node = Tree_md.Ir.Text "the value x^2"; _ } ]; _ } ] -> ()
-  | blocks -> Alcotest.fail ("expected the text intact, got " ^ String.concat ", " (List.map (fun (b : Tree_md.Ir.block) -> block_node_to_string b.Tree_md.Ir.bnode) blocks))
+  | [ { bnode = Tree_of_md_legacy.Ir.Paragraph [ { node = Tree_of_md_legacy.Ir.Text "the value x^2"; _ } ]; _ } ] -> ()
+  | blocks -> Alcotest.fail ("expected the text intact, got " ^ String.concat ", " (List.map (fun (b : Tree_of_md_legacy.Ir.block) -> block_node_to_string b.Tree_of_md_legacy.Ir.bnode) blocks))
 
 (* A paragraph holding nothing but an anchor leaves no `\p{}` behind. *)
 let test_standalone_anchor_dropped () =
   match expect_blocks "lone anchor" "Body.\n\n^aside" with
-  | [ { bnode = Tree_md.Ir.Paragraph [ { node = Tree_md.Ir.Text "Body."; _ } ]; _ } ] -> ()
-  | blocks -> Alcotest.fail ("expected the anchor paragraph gone, got " ^ String.concat ", " (List.map (fun (b : Tree_md.Ir.block) -> block_node_to_string b.Tree_md.Ir.bnode) blocks))
+  | [ { bnode = Tree_of_md_legacy.Ir.Paragraph [ { node = Tree_of_md_legacy.Ir.Text "Body."; _ } ]; _ } ] -> ()
+  | blocks -> Alcotest.fail ("expected the anchor paragraph gone, got " ^ String.concat ", " (List.map (fun (b : Tree_of_md_legacy.Ir.block) -> block_node_to_string b.Tree_of_md_legacy.Ir.bnode) blocks))
 
 (* ── Display math normalization ── *)
 
@@ -489,10 +489,10 @@ let test_display_math_normalization () =
   match parse "$$x+y$$" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Display_math "x+y"; _ }] -> ()
+     | [{ bnode = Tree_of_md_legacy.Ir.Display_math "x+y"; _ }] -> ()
      | _ -> Alcotest.fail "expected Display_math")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 (* ── Diagnostic: raw block HTML ── *)
@@ -513,11 +513,11 @@ let test_gfm_table_lowered () =
   | Error diags ->
     Alcotest.fail ("GFM table rejected: "
                    ^ String.concat "; "
-                       (List.map (fun d -> d.Tree_md.Diagnostic.message) diags))
+                       (List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags))
   | Ok doc ->
     Alcotest.(check (list string)) "one padded table"
       [ "Table(2 cols, header=true, 1 rows)" ]
-      (List.map (fun b -> block_node_to_string b.Tree_md.Ir.bnode) doc.blocks)
+      (List.map (fun b -> block_node_to_string b.Tree_of_md_legacy.Ir.bnode) doc.blocks)
 
 (* ── Diagnostic: task marker ── *)
 
@@ -527,13 +527,13 @@ let test_task_marker_lowered () =
   | Error diags ->
     Alcotest.fail ("task list rejected: "
                    ^ String.concat "; "
-                       (List.map (fun d -> d.Tree_md.Diagnostic.message) diags))
+                       (List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags))
   | Ok doc ->
     (match doc.blocks with
-     | [ { Tree_md.Ir.bnode = Tree_md.Ir.List { items; _ }; _ } ] ->
+     | [ { Tree_of_md_legacy.Ir.bnode = Tree_of_md_legacy.Ir.List { items; _ }; _ } ] ->
        Alcotest.(check (list bool)) "both carry a marker" [ true; true ]
          (List.map
-            (fun (i : Tree_md.Ir.list_item) -> i.Tree_md.Ir.item_task <> None)
+            (fun (i : Tree_of_md_legacy.Ir.list_item) -> i.Tree_of_md_legacy.Ir.item_task <> None)
             items)
      | _ -> Alcotest.fail "expected a single list")
 
@@ -546,10 +546,10 @@ let test_unreferenced_footnote_dropped () =
   | Error diags ->
     Alcotest.fail ("footnote rejected: "
                    ^ String.concat "; "
-                       (List.map (fun d -> d.Tree_md.Diagnostic.message) diags))
+                       (List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags))
   | Ok doc ->
     Alcotest.(check (list string)) "definition removed from the flow" []
-      (List.map (fun b -> block_node_to_string b.Tree_md.Ir.bnode) doc.blocks)
+      (List.map (fun b -> block_node_to_string b.Tree_of_md_legacy.Ir.bnode) doc.blocks)
 
 (* Numbering follows the order references appear, not the order definitions
    do, and the definitions are gathered into one section at the end. *)
@@ -558,10 +558,10 @@ let test_footnotes_numbered_by_reference () =
   | Error diags ->
     Alcotest.fail ("footnotes rejected: "
                    ^ String.concat "; "
-                       (List.map (fun d -> d.Tree_md.Diagnostic.message) diags))
+                       (List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags))
   | Ok doc ->
     let rendered =
-      List.map (fun b -> block_node_to_string b.Tree_md.Ir.bnode) doc.blocks
+      List.map (fun b -> block_node_to_string b.Tree_of_md_legacy.Ir.bnode) doc.blocks
     in
     Alcotest.(check bool) "one footnote section at the end" true
       (match List.rev rendered with
@@ -570,11 +570,11 @@ let test_footnotes_numbered_by_reference () =
     (* [^b] is written first, so it is 1, even though [^a] is defined first. *)
     Alcotest.(check (list int)) "numbered by reference order" [ 1; 2 ]
       (match doc.blocks with
-       | { Tree_md.Ir.bnode = Tree_md.Ir.Paragraph inlines; _ } :: _ ->
+       | { Tree_of_md_legacy.Ir.bnode = Tree_of_md_legacy.Ir.Paragraph inlines; _ } :: _ ->
          List.filter_map
-           (fun (i : Tree_md.Ir.inline) ->
-             match i.Tree_md.Ir.node with
-             | Tree_md.Ir.Footnote_ref { number; _ } -> Some number
+           (fun (i : Tree_of_md_legacy.Ir.inline) ->
+             match i.Tree_of_md_legacy.Ir.node with
+             | Tree_of_md_legacy.Ir.Footnote_ref { number; _ } -> Some number
              | _ -> None)
            inlines
        | _ -> [])
@@ -681,22 +681,22 @@ let test_code_block_protects_math () =
   match parse "```\n$$x$$\n```" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Code_block { code; _ }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.Code_block { code; _ }; _ }] ->
        Alcotest.(check string) "code protects math" "$$x$$" code
      | _ -> Alcotest.fail "expected CodeBlock")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_code_block_protects_wiki () =
   match parse "```\n![[note]]\n```" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Code_block { code; _ }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.Code_block { code; _ }; _ }] ->
        Alcotest.(check string) "code protects wiki" "![[note]]" code
      | _ -> Alcotest.fail "expected CodeBlock")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 (* ── Regression: nested blockquote creates TM103 but outer still works ── *)
@@ -706,7 +706,7 @@ let test_blockquote_deep_structure () =
   | Ok doc ->
     Alcotest.(check int) "one blockquote" 1 (List.length doc.blocks)
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 (* ── Regression: list with ordered start preserved ── *)
@@ -715,11 +715,11 @@ let test_list_ordered_start_preserved () =
   match parse "42. first\n43. second" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.List { kind = Tree_md.Ir.Ordered 42; items; _ }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.List { kind = Tree_of_md_legacy.Ir.Ordered 42; items; _ }; _ }] ->
        Alcotest.(check int) "two items" 2 (List.length items)
      | _ -> Alcotest.fail "expected Ordered(42)")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 (* ── Regression: tightness flag preserved ── *)
@@ -728,11 +728,11 @@ let test_list_tightness_preserved () =
   match parse "- tight a\n- tight b" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.List { tight = true; items; _ }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.List { tight = true; items; _ }; _ }] ->
        Alcotest.(check int) "tight items" 2 (List.length items)
      | _ -> Alcotest.fail "expected tight list")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 (* ── Regression: multi-line code blocks preserve line separators ── *)
@@ -741,22 +741,22 @@ let test_indented_code_multi_line () =
   match parse "    line1\n    line2" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Code_block { info = Tree_md.Ir.No_info; code }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.Code_block { info = Tree_of_md_legacy.Ir.No_info; code }; _ }] ->
        Alcotest.(check string) "indented multi-line" "line1\nline2" code
      | _ -> Alcotest.fail "expected CodeBlock")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 let test_fenced_code_multi_line () =
   match parse "```\nline1\nline2\n```" with
   | Ok doc ->
     (match doc.blocks with
-     | [{ bnode = Tree_md.Ir.Code_block { info = Tree_md.Ir.No_info; code }; _ }] ->
+     | [{ bnode = Tree_of_md_legacy.Ir.Code_block { info = Tree_of_md_legacy.Ir.No_info; code }; _ }] ->
        Alcotest.(check string) "fenced multi-line" "line1\nline2" code
      | _ -> Alcotest.fail "expected CodeBlock")
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 (* ── Regression: nested embed/display-math in blockquote > list contexts ── *)
@@ -779,10 +779,10 @@ let test_document_span () =
   match parse "# Title\n\ntext" with
   | Ok doc ->
     let sp = doc.doc_span in
-    Alcotest.(check bool) "span start_byte >= 0" true (sp.Tree_md.Span.start_byte >= 0);
-    Alcotest.(check bool) "span end_byte >= start_byte" true (sp.Tree_md.Span.end_byte >= sp.Tree_md.Span.start_byte)
+    Alcotest.(check bool) "span start_byte >= 0" true (sp.Tree_of_md_legacy.Span.start_byte >= 0);
+    Alcotest.(check bool) "span end_byte >= start_byte" true (sp.Tree_of_md_legacy.Span.end_byte >= sp.Tree_of_md_legacy.Span.start_byte)
   | Error diags ->
-    let msgs = List.map (fun d -> d.Tree_md.Diagnostic.message) diags |> String.concat "; " in
+    let msgs = List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags |> String.concat "; " in
     Alcotest.fail ("expected Ok, got: " ^ msgs)
 
 (* ── Run ── *)
@@ -799,31 +799,31 @@ let card_block =
    ```"
 
 (* The plugin's own YAML is not code: it is a card, and a reader sees the
-   card. A key tree-md means nothing by is the plugin's business. *)
+   card. A key tree_of_md means nothing by is the plugin's business. *)
 let test_cardlink_lowered () =
   match parse (card_block ^ "\n") with
   | Ok doc ->
     (match doc.blocks with
-     | [ { bnode = Tree_md.Ir.Card_link card; _ } ] ->
+     | [ { bnode = Tree_of_md_legacy.Ir.Card_link card; _ } ] ->
        Alcotest.(check string) "url"
-         "https://booklog.jp/item/1/4840241929" card.Tree_md.Ir.card_url;
+         "https://booklog.jp/item/1/4840241929" card.Tree_of_md_legacy.Ir.card_url;
        Alcotest.(check string) "title"
          "\xe6\x97\x85\xe3\x81\xab\xe5\x87\xba\xe3\x82\x88\xe3\x81\x86"
-         card.Tree_md.Ir.card_title;
+         card.Tree_of_md_legacy.Ir.card_title;
        (* A card is one line however the page wrote it. *)
        Alcotest.(check (option string)) "description on one line"
-         (Some "one line") card.Tree_md.Ir.card_description;
+         (Some "one line") card.Tree_of_md_legacy.Ir.card_description;
        Alcotest.(check (option string)) "host"
-         (Some "booklog.jp") card.Tree_md.Ir.card_host;
+         (Some "booklog.jp") card.Tree_of_md_legacy.Ir.card_host;
        Alcotest.(check (option string)) "image"
          (Some "https://m.media-amazon.com/images/I/51308eIzCfL._SL500_.jpg")
-         card.Tree_md.Ir.card_image;
+         card.Tree_of_md_legacy.Ir.card_image;
        Alcotest.(check (option string)) "no favicon was written"
-         None card.Tree_md.Ir.card_favicon
+         None card.Tree_of_md_legacy.Ir.card_favicon
      | _ -> Alcotest.fail "expected a card")
   | Error diags ->
     let msgs =
-      List.map (fun d -> d.Tree_md.Diagnostic.message) diags
+      List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags
       |> String.concat "; "
     in
     Alcotest.fail ("a card block was rejected: " ^ msgs)
@@ -843,14 +843,14 @@ let test_embed_fence_lowered () =
   with
   | Ok doc ->
     (match doc.blocks with
-     | [ { bnode = Tree_md.Ir.Card_link card; _ } ] ->
-       Alcotest.(check string) "title" "Example" card.Tree_md.Ir.card_title;
+     | [ { bnode = Tree_of_md_legacy.Ir.Card_link card; _ } ] ->
+       Alcotest.(check string) "title" "Example" card.Tree_of_md_legacy.Ir.card_title;
        Alcotest.(check (option string)) "favicon"
-         (Some "https://example.test/favicon.ico") card.Tree_md.Ir.card_favicon
+         (Some "https://example.test/favicon.ico") card.Tree_of_md_legacy.Ir.card_favicon
      | _ -> Alcotest.fail "expected a card")
   | Error diags ->
     let msgs =
-      List.map (fun d -> d.Tree_md.Diagnostic.message) diags
+      List.map (fun d -> d.Tree_of_md_legacy.Diagnostic.message) diags
       |> String.concat "; "
     in
     Alcotest.fail ("an embed block was rejected: " ^ msgs)
@@ -861,9 +861,9 @@ let test_card_without_a_title_falls_back_to_the_host () =
   match parse "```cardlink\nurl: https://example.test/a\nhost: example.test\n```\n" with
   | Ok doc ->
     (match doc.blocks with
-     | [ { bnode = Tree_md.Ir.Card_link card; _ } ] ->
+     | [ { bnode = Tree_of_md_legacy.Ir.Card_link card; _ } ] ->
        Alcotest.(check string) "the host is the label"
-         "example.test" card.Tree_md.Ir.card_title
+         "example.test" card.Tree_of_md_legacy.Ir.card_title
      | _ -> Alcotest.fail "expected a card")
   | Error _ -> Alcotest.fail "a card with no title was rejected"
 

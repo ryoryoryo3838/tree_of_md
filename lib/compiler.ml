@@ -156,7 +156,7 @@ let load_mdbase (config : Config.t) =
       Ok ({ settings; types }, config_warnings @ type_warnings))
 
 (* A schema issue is reported at the severity `settings.validation` asks for,
-   and carries mdbase's canonical code beside tree-md's own. *)
+   and carries mdbase's canonical code beside tree_of_md's own. *)
 let schema_diagnostics ~mdbase ~frontmatter ~type_name (issues : Json_schema.issue list) =
   match mdbase.settings.Mdbase_config.validation with
   | Mdbase_config.Off -> []
@@ -212,7 +212,7 @@ let parse ?(mdbase = no_mdbase) ?(collection_path = "") ~default_id ~filename so
     if Diagnostic.has_error mdbase_diags then
       Error (sorted (fm_warnings @ mdbase_diags))
     else
-    (* Effective front matter is what tree-md then reads: the persisted mapping
+    (* Effective front matter is what tree_of_md then reads: the persisted mapping
        plus a value for each key a matched type defaults. Nothing is written to
        the note. *)
     let effective =
@@ -361,7 +361,7 @@ let output_for (record : Discovery.source_file) root_id =
   | Ok relative -> relative
   | Error _ -> record.Discovery.output_relative
 
-(* Every managed path is written the way tree-md.toml names it — below the
+(* Every managed path is written the way tree_of_md.toml names it — below the
    directory that file is in — because a build owns files under the output
    root and, when `[assets].into` says so, under an asset root as well. One
    root could not name both. *)

@@ -1,7 +1,7 @@
 (* `mdbase.yaml`, the collection configuration mdbase v0.3 §04 defines.
 
    It is optional: a forest without one gets the defaults, and everything
-   tree-md did before this file existed still works. What it buys is that the
+   tree_of_md did before this file existed still works. What it buys is that the
    settings a collection already keeps for its other mdbase tools — how strict
    validation is, which key names declare a type, which field is the id — are
    read from one place rather than restated here. *)

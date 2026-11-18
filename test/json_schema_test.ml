@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 let compile text =
   match Json_schema.compile (Yojson.Safe.from_string text) with

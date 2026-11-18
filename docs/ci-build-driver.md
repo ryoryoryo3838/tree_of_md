@@ -1,7 +1,7 @@
 # Source-only CI build of `tree_of_md`
 
-The canonical public converter is **`tree_of_md`**. The package/repository remains
-`tree-md`; the legacy executable and the existing `bin/public_main.ml` Dune
+The canonical public converter is **`tree_of_md`**. The package and repository are
+also `tree_of_md`; the legacy `tree_of_md_legacy` executable and the existing `bin/public_main.ml` Dune
 entrypoint are unchanged. This driver is not a publisher or a Forester renderer.
 It reads no snapshot, vault, attachments, deployment configuration or credentials.
 
@@ -48,7 +48,7 @@ may require OCaml 5.4 or newer; that is not a reason to change this converter lo
 
 The driver validates regular, nonsymlink build inputs and copies only:
 
-- `dune-project`, `dune-workspace`, `tree-md.opam`;
+- `dune-project`, `dune-workspace`, `tree_of_md.opam`;
 - `bin/` and `lib/`: Dune files and OCaml sources/interfaces;
 - the existing `dune.lock/`: `lock.dune` and locked package files.
 

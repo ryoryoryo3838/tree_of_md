@@ -47,9 +47,9 @@ jobs:
       - name: Test
         run: devbox run -- dune runtest
 
-      # tree-md.opam is generated from dune-project; a stale committed copy is
+      # tree_of_md.opam is generated from dune-project; a stale committed copy is
       # a release hazard, so fail if regenerating it would change the file.
       - name: Check generated opam file is up to date
         run: |
           devbox run -- dune build @install
-          git diff --exit-code -- tree-md.opam
+          git diff --exit-code -- tree_of_md.opam

@@ -1,12 +1,12 @@
-# tree-md
+# tree_of_md
 
-[![CI](https://github.com/ryoryoryo3838/tree-md/actions/workflows/ci.yml/badge.svg)](https://github.com/ryoryoryo3838/tree-md/actions/workflows/ci.yml)
+[![CI](https://github.com/ryoryoryo3838/tree_of_md/actions/workflows/ci.yml/badge.svg)](https://github.com/ryoryoryo3838/tree_of_md/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![OCaml](https://img.shields.io/badge/OCaml-%3E%3D5.3.0-ec6813.svg)](https://ocaml.org)
 
 **Write your notes in Markdown. Publish them with [Forester](https://www.forester-notes.org/).**
 
-`tree-md` compiles a strict Markdown dialect (`.tree.md`) into deterministic
+`tree_of_md` compiles a strict Markdown dialect (`.tree.md`) into deterministic
 Forester `.tree` source. Headings become nested subtrees, Obsidian-style wiki
 links and embeds become tree references and transclusions, and every generated
 file is manifest-owned, hash-checked, and byte-for-byte reproducible.
@@ -22,8 +22,8 @@ source is a bespoke markup language. If you already keep notes in Markdown — i
 Obsidian, in your editor, in a git repo — you have to either abandon that or
 maintain two copies.
 
-`tree-md` lets Markdown stay the source of truth. You edit `.tree.md` files with
-ordinary Markdown tooling; `tree-md build` produces the `.tree` files Forester
+`tree_of_md` lets Markdown stay the source of truth. You edit `.tree.md` files with
+ordinary Markdown tooling; `tree_of_md_legacy build` produces the `.tree` files Forester
 consumes.
 
 It is deliberately **strict**. Markdown it cannot translate faithfully is
@@ -40,7 +40,7 @@ A few conditions are reported without failing the build. Those are **warnings**:
 they carry the same code, span, and excerpt as an error, but they never change
 the exit code and never stop a build from writing.
 
-`tree-md` is independent from Forester: no Forester code is linked. It targets
+`tree_of_md` is independent from Forester: no Forester code is linked. It targets
 the source language and CLI behavior of the `forester-6.0-dev` branch at commit
 `30b73641cef02433ee158db6ddc77f7b49de60be`.
 
@@ -100,19 +100,19 @@ A [[wiki-link]] and math $x^2$.
 
 - OCaml >= 5.3.0
 - Dune >= 3.22
-- Forester 6.0-dev, to render the generated trees (not needed to run `tree-md`)
+- Forester 6.0-dev, to render the generated trees (not needed to run `tree_of_md`)
 
 ## Installation
 
 ### From source with opam
 
 ```bash
-git clone https://github.com/ryoryoryo3838/tree-md.git
-cd tree-md
+git clone https://github.com/ryoryoryo3838/tree_of_md.git
+cd tree_of_md
 opam install .
 ```
 
-This installs the `tree-md` executable into your opam switch.
+This installs the `tree_of_md_legacy` and `tree_of_md` executables into your opam switch.
 
 ### From source with Dune package management
 
@@ -120,10 +120,10 @@ The repository pins its entire dependency closure, including the OCaml
 compiler, in [`dune.lock/`](./dune.lock). No opam switch is needed:
 
 ```bash
-git clone https://github.com/ryoryoryo3838/tree-md.git
-cd tree-md
+git clone https://github.com/ryoryoryo3838/tree_of_md.git
+cd tree_of_md
 dune build           # fetches and builds the locked closure
-dune exec -- tree-md --version
+dune exec -- tree_of_md_legacy --version
 ```
 
 ### With devbox
@@ -138,19 +138,19 @@ dune build
 
 ## Quick start
 
-A `tree-md` workspace sits alongside a Forester forest. Create this layout:
+A `tree_of_md` workspace sits alongside a Forester forest. Create this layout:
 
 ```text
 my-forest/
 ├── forest.toml          # Forester's own config
-├── tree-md.toml         # tree-md's config
+├── tree_of_md.toml         # tree_of_md's config
 ├── trees-md/            # Markdown sources you write
 │   └── index.tree.md
 ├── trees/               # handwritten .tree files (optional)
-└── generated/           # tree-md writes here — do not edit by hand
+└── generated/           # tree_of_md writes here — do not edit by hand
 ```
 
-**1. Configure `tree-md.toml`:**
+**1. Configure `tree_of_md.toml`:**
 
 ```toml
 version = 1
@@ -189,14 +189,14 @@ resolve to a tree that exists, so add the targets before you link to them.
 **4. Build:**
 
 ```console
-$ tree-md build
+$ tree_of_md_legacy build
 build: 1 created, 0 replaced, 0 deleted, 0 unchanged
 
-$ tree-md check          # read-only; confirms the generated state is clean
+$ tree_of_md_legacy check          # read-only; confirms the generated state is clean
 $ forester build forest.toml
 ```
 
-`tree-md build` writes `generated/index.tree`. `forester build` turns the whole
+`tree_of_md_legacy build` writes `generated/index.tree`. `forester build` turns the whole
 forest into your site.
 
 ---
@@ -230,7 +230,7 @@ YAML front matter is optional. When present it must be the first thing in the
 file, delimited by `---`, and it must parse to a **mapping**.
 
 **Any key may appear.** Front matter is an arbitrary mapping, as mdbase v0.3
-§03 defines it; the table below is the part `tree-md` interprets, and every
+§03 defines it; the table below is the part `tree_of_md` interprets, and every
 other key is carried and emitted nowhere. An Obsidian vault is full of
 `aliases`, `cssclasses`, `created` and `publish`, and none of them are this
 compiler's business.
@@ -274,7 +274,7 @@ order regardless of which spelling was used.
 
 ### Unrecognized keys
 
-A key `tree-md` does not interpret is **carried, not rejected**. It appears in
+A key `tree_of_md` does not interpret is **carried, not rejected**. It appears in
 no output and fails nothing.
 
 The one exception is a key within an edit or two of one it does know. `taxo:`
@@ -295,7 +295,7 @@ misspelling of anything.
 
 ### Minting an address
 
-A tree that states no `id` is given one by `tree-md build`. The scheme follows
+A tree that states no `id` is given one by `tree_of_md_legacy build`. The scheme follows
 the convention Forester documents for its own forests — a base-36 number,
 zero-padded to four digits — and is configurable:
 
@@ -312,7 +312,7 @@ mint     = "build"  # or "off", to have something else fulfil the requests
 front matter, and reports what it gave to what:
 
 ```console
-$ tree-md build
+$ tree_of_md_legacy build
 minted: /home/you/my-forest/trees-md/scratch.tree.md -> V0YI
 build: 1 created, 0 replaced, 0 deleted, 2 unchanged
 ```
@@ -767,14 +767,14 @@ and which setting carries it across, rather than sending you to look for a
 file that is sitting right there:
 
 ```console
-$ tree-md build
+$ tree_of_md_legacy build
 TM203: error: missing asset "CYCL-01.jpg"
   --> trees-md/DAILY/CYCL.tree.md:6:1
    |
    | ![[CYCL-01.jpg]]
    | ^^^^^^^^^^^^^^^^
   note: the vault keeps it at trees-md/DAILY/assets/CYCL-01.jpg, which is not
-        under an asset root; `[assets].into` in tree-md.toml says where an
+        under an asset root; `[assets].into` in tree_of_md.toml says where an
         attachment a published tree embeds is copied to
 ```
 
@@ -875,8 +875,8 @@ errors, not warnings:
 ## CLI reference
 
 ```text
-tree-md check [--config PATH]
-tree-md build [--config PATH]
+tree_of_md_legacy check [--config PATH]
+tree_of_md_legacy build [--config PATH]
 ```
 
 | Command | Behavior |
@@ -884,7 +884,7 @@ tree-md build [--config PATH]
 | `check` | Validates the whole forest and reports generated-state problems **without writing any file**. Exits 0 only when the generated state is clean. |
 | `build` | Validates first, then synchronizes generated outputs transactionally. |
 
-`--config PATH` defaults to `./tree-md.toml`, read exactly from the current
+`--config PATH` defaults to `./tree_of_md.toml`, read exactly from the current
 working directory. **Parent directories are not searched.**
 
 ### Exit codes
@@ -899,7 +899,7 @@ working directory. **Parent directories are not searched.**
 
 | Variable | Effect |
 | --- | --- |
-| `TREE_MD_BACKTRACE=1` | Print an OCaml backtrace on an internal error |
+| `TREE_OF_MD_BACKTRACE=1` | Print an OCaml backtrace on an internal error |
 
 ## Configuration
 
@@ -926,7 +926,7 @@ The five top-level keys are required and the key set is closed, `[id]` and
 `[assets]` included: an unknown key is `TM401` rather than a setting that
 quietly does nothing.
 
-All paths are relative to the directory containing `tree-md.toml`. The
+All paths are relative to the directory containing `tree_of_md.toml`. The
 referenced `forest.toml` supplies `[forest].trees` and `[forest].assets`,
 relative to the directory containing `forest.toml`; the normalized output root
 must appear in `[forest].trees`.
@@ -964,7 +964,7 @@ not carry it. The count appears in the summary so that a note you meant to
 publish and forgot to link does not vanish in silence:
 
 ```console
-$ tree-md build
+$ tree_of_md_legacy build
 build: 10 created, 0 replaced, 0 deleted, 0 unchanged, 34 unpublished
 ```
 
@@ -975,9 +975,9 @@ away — selects no source at all, and a build that publishes nothing emits no
 tree and deletes every tree it wrote before:
 
 ```console
-$ tree-md build
-TM401: warning: /home/you/site/tree-md.toml: publish.from matched none of the 7 sources, so nothing is published
-  --> /home/you/site/tree-md.toml
+$ tree_of_md_legacy build
+TM401: warning: /home/you/site/tree_of_md.toml: publish.from matched none of the 7 sources, so nothing is published
+  --> /home/you/site/tree_of_md.toml
   note: its patterns are matched against the path of a source below its source root, with the root itself spent
 build: 0 created, 0 replaced, 7 deleted, 0 unchanged, 7 unpublished
 ```
@@ -997,11 +997,11 @@ what a forest did before the table existed.
 ## mdbase
 
 A forest is also an [mdbase](https://github.com/mdbase-dev/mdbase-spec)
-collection, and `tree-md` reads what one declares. Nothing here is required:
+collection, and `tree_of_md` reads what one declares. Nothing here is required:
 a forest with no `mdbase.yaml` and no `_types/` behaves exactly as it did
 before either existed.
 
-`tree-md` targets **mdbase v0.3.0**, pinned the way the Forester target is
+`tree_of_md` targets **mdbase v0.3.0**, pinned the way the Forester target is
 pinned. During major-zero the minor component is the compatibility boundary, so
 a collection declaring `0.2.x` or `0.4.x` is refused with a message naming the
 version this build supports.
@@ -1027,8 +1027,8 @@ settings:
 
 An unknown key is a **warning**, as §04 requires, and loading continues.
 `record_extensions`, `include_subfolders` and `exclude` decide nothing here —
-`tree-md` compiles the `.tree.md` files under the source roots named in
-`tree-md.toml` — so setting one says so rather than quietly having no effect.
+`tree_of_md` compiles the `.tree.md` files under the source roots named in
+`tree_of_md.toml` — so setting one says so rather than quietly having no effect.
 
 ### Type files
 
@@ -1064,7 +1064,7 @@ Every note under `trees-md/` states a status.
 ```
 
 The schema validates the front matter **as written**, and a violation carries
-mdbase's canonical code beside `tree-md`'s own:
+mdbase's canonical code beside `tree_of_md`'s own:
 
 ```console
 TM101 (schema_enum): error: /status: must be one of "draft", "published" (type "note")
@@ -1098,21 +1098,21 @@ report itself valid on the strength of a constraint nothing checked.
 The same rule governs the type file's own sections. `match.path_glob`,
 `match.fields_present`, `match.where`, `collection.read_defaults`,
 `collection.display` and any `x-` extension are supported. These are refused,
-each with a message saying what `tree-md` does instead:
+each with a message saying what `tree_of_md` does instead:
 
 | Section | Why |
 | --- | --- |
-| `collection.unique` | `tree-md` enforces address uniqueness across the whole forest itself, as `TM201` |
+| `collection.unique` | `tree_of_md` enforces address uniqueness across the whole forest itself, as `TM201` |
 | `collection.links` | Every reference is resolved closed-world already, and an unresolved one is `TM202` |
 | `collection.path` | An output is named after the tree's address |
-| `collection.projections`, `match.expr` | Need the CEL profile, which `tree-md` does not implement (`unsupported_profile`) |
-| `lifecycle` | Addresses are minted from the `[id]` policy in `tree-md.toml` |
-| `runtime`, `migrations`, `implements` | `tree-md` runs no workflows, migrates nothing, and loads no data contracts |
+| `collection.projections`, `match.expr` | Need the CEL profile, which `tree_of_md` does not implement (`unsupported_profile`) |
+| `lifecycle` | Addresses are minted from the `[id]` policy in `tree_of_md.toml` |
+| `runtime`, `migrations`, `implements` | `tree_of_md` runs no workflows, migrates nothing, and loads no data contracts |
 
-### tree-md's own reading is separate
+### tree_of_md's own reading is separate
 
 A declared schema says what the *collection* considers a valid record.
-`tree-md` separately reads the keys it emits — `id`, `date`, `taxon`,
+`tree_of_md` separately reads the keys it emits — `id`, `date`, `taxon`,
 `authors`, `contributors`, `tags`, `meta` — and what it reports about those is
 about what it can put into a `.tree`, not about validity. So an unusable
 `date:` is still an error at `validation: off`: there is no `\date{}` to emit
@@ -1125,14 +1125,14 @@ enforced rather than assumed.
 
 - **Only manifest-owned files are managed.** `build` creates, replaces, and
   deletes only files named by the previous manifest
-  (`<output>/.tree-md-manifest.json`). An unknown file is never deleted; an
+  (`<output>/.tree_of_md-manifest.json`). An unknown file is never deleted; an
   unknown file occupying an expected output path fails the build instead of
   being overwritten.
 - **What is managed is what the manifest names.** Every path in it is written
-  relative to the directory holding `tree-md.toml`, so one manifest can own a
+  relative to the directory holding `tree_of_md.toml`, so one manifest can own a
   tree under the output root and a copied attachment under an asset root. It
   never names a file under a source root, and a manifest that does is `TM402`
-  rather than a delete. A manifest written by an older `tree-md` (format 1,
+  rather than a delete. A manifest written by an older `tree_of_md` (format 1,
   whose outputs are named below the output root) is read and rewritten, not
   rejected.
 - **Manual modifications are protected.** Before replacing or deleting a managed
@@ -1143,7 +1143,7 @@ enforced rather than assumed.
   exists it is opened read-only for a non-mutating test; an active writer is an
   exit-2 concurrency failure.
 - **Interrupted builds roll forward.** All staged bytes are written and flushed
-  before a pre-commit journal (`<output>/.tree-md-transaction.json`) is
+  before a pre-commit journal (`<output>/.tree_of_md-transaction.json`) is
   installed. After an interrupted commit, `check` reports the incomplete state
   (`TM305`) without writing, and the next `build` performs a hash-checked
   roll-forward under the writer lock.
@@ -1210,7 +1210,7 @@ rendered alongside — `TM101 (schema_additional_properties): warning: …`.
 Example:
 
 ```console
-$ tree-md build
+$ tree_of_md_legacy build
 TM003: error: file begins with a UTF-8 byte order mark; remove it
   --> trees-md/index.tree.md:1:1
    |
@@ -1240,7 +1240,7 @@ runs against a pinned Forester build rather than whatever is on `PATH`.
 ## Contributing
 
 Issues and pull requests are welcome at
-<https://github.com/ryoryoryo3838/tree-md>.
+<https://github.com/ryoryoryo3838/tree_of_md>.
 
 Because the compiler's whole value proposition is that its output is exact,
 please add a test for any change to emission behavior. `test/fixtures/markdown/`

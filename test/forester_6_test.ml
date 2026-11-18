@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 (* ── Test helpers ── *)
 

@@ -56,7 +56,7 @@ let valid_link_target s =
        (fun c ->
          match c with
          | '[' | ']' | '|' | '#' | '^' -> false
-         (* tree-md does not unescape a wiki body, so a backslash left in a
+         (* tree_of_md does not unescape a wiki body, so a backslash left in a
             target is either an escape that should have been consumed or a
             separator that is not supported either way. *)
          | '\\' -> false
@@ -194,7 +194,7 @@ let valid_date s =
   | _ -> false
 
 
-(* ── Reading the mapping: which keys tree-md interprets ── *)
+(* ── Reading the mapping: which keys tree_of_md interprets ── *)
 
 (* Meta names that may be written as top-level keys instead of nested under
    `meta:`, so that an editor showing front matter as a property list can edit
@@ -236,7 +236,7 @@ let levenshtein a b =
 
 (* An unknown key is carried, not rejected — an Obsidian vault is full of keys
    that are no business of this compiler. But a key that is one or two edits
-   from one tree-md does know is far more likely a typo than a property, and
+   from one tree_of_md does know is far more likely a typo than a property, and
    silently dropping `taxo:` would lose a `\taxon{}` with nothing to show for
    it. So that case, and only that case, is said out loud. *)
 (* [extra] carries the collection's configured address key, so that a forest

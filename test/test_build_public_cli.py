@@ -131,7 +131,7 @@ class DriverTests(unittest.TestCase):
         root.mkdir()
         files = {"dune-project": b"(lang dune 3.22)\n",
                  "dune-workspace": b"(lang dune 3.21)\n(pkg enabled)\n",
-                 "tree-md.opam": b"synthetic package file\n",
+                 "tree_of_md.opam": b"synthetic package file\n",
                  "bin/dune": b"(executable (name public_main) (public_name tree_of_md))\n",
                  "bin/public_main.ml": b"(* synthetic source, not compiled *)\n",
                  "lib/dune": b"(library (name synthetic))\n",

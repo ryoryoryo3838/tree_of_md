@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 (* End-to-end workspace lifecycle tests. Every test copies the reviewed
    workspaces/clean fixture into a runtime temp directory and drives the
@@ -16,7 +16,7 @@ let golden_sha256 = Digestif.SHA256.to_hex (Digestif.SHA256.digest_string golden
    /private/var. Every path here would carry that link and every test that
    writes would fail for a reason that has nothing to do with what it tests. *)
 let tmpdir () =
-  let name = Filename.temp_file "tree-md-ws-" "" in
+  let name = Filename.temp_file "tree_of_md-ws-" "" in
   Unix.unlink name;
   Unix.mkdir name 0o700;
   Unix.realpath name
@@ -71,7 +71,7 @@ let resolve_fixture_path relative =
       executable_directory |> Filename.dirname |> Filename.dirname
       |> Filename.dirname |> Filename.dirname |> Filename.dirname
     in
-    Filename.concat build_root ("tools/tree-md/test/fixtures/" ^ relative)
+    Filename.concat build_root ("tools/tree_of_md/test/fixtures/" ^ relative)
 
 (* Recursive copy that preserves regular files and directories only. Uses
    stat (following symlinks) because dune's test sandbox materializes
@@ -95,12 +95,12 @@ let with_workspace f =
     cp_r (resolve_fixture_path "workspaces/clean") ws;
     f ws)
 
-let config_path ws = Filename.concat ws "tree-md.toml"
+let config_path ws = Filename.concat ws "tree_of_md.toml"
 let output_root ws = Filename.concat ws "generated"
 let output_file ws = Filename.concat (output_root ws) "index.tree"
-let manifest_file ws = Filename.concat (output_root ws) ".tree-md-manifest.json"
-let journal_file ws = Filename.concat (output_root ws) ".tree-md-transaction.json"
-let stage_dir ws = Filename.concat (output_root ws) ".tree-md-stage"
+let manifest_file ws = Filename.concat (output_root ws) ".tree_of_md-manifest.json"
+let journal_file ws = Filename.concat (output_root ws) ".tree_of_md-transaction.json"
+let stage_dir ws = Filename.concat (output_root ws) ".tree_of_md-stage"
 
 let codes (r : Workspace.result) =
   List.map (fun d -> Diagnostic.code_string d.Diagnostic.code) r.diagnostics
@@ -117,7 +117,7 @@ let snapshot ws =
   | Ok s -> s
   | Error ds -> fail_errs ds
 
-(* The reserved .tree-md-stage base directory legitimately persists (empty)
+(* The reserved .tree_of_md-stage base directory legitimately persists (empty)
    after a successful build; stage_entries reports its content. *)
 let stage_entries ws = (snapshot ws).Workspace_fs.stage_entries
 
@@ -144,7 +144,7 @@ let test_check_first_missing_no_writes () =
     Alcotest.(check (list int)) "summary zeros" [0; 0; 0; 0] (counts r);
     Alcotest.(check bool) "output root not created" false (exists (output_root ws));
     Alcotest.(check bool) "no lock file created" false
-      (exists (Filename.concat (output_root ws) ".tree-md.lock")))
+      (exists (Filename.concat (output_root ws) ".tree_of_md.lock")))
 
 let test_check_clean_silent_identical_snapshots () =
   with_workspace (fun ws ->

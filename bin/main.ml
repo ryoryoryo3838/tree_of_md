@@ -5,5 +5,5 @@
    internal-error escape for re-raised Out_of_memory/Sys.Break) passes
    through unchanged. *)
 let () =
-  let code = Cmdliner.Cmd.eval' Tree_md.Cli.command in
+  let code = Cmdliner.Cmd.eval' Tree_of_md_legacy.Cli.command in
   exit (if code = Cmdliner.Cmd.Exit.cli_error then 2 else code)

@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 (* Resolution now returns its warnings alongside the per-document results;
    these suites assert on the results. *)
@@ -36,7 +36,7 @@ let write_file path contents =
     (fun () -> output_string channel contents)
 
 let with_fixture f =
-  let root = Filename.temp_file "tree-md-index-" ".dir" in
+  let root = Filename.temp_file "tree_of_md-index-" ".dir" in
   Sys.remove root;
   Unix.mkdir root 0o700;
   let rec remove path =

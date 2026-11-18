@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 (* Unit tests for the CLI exit-code mapping and the top-level exception
    filter (Cli.exit_code and Cli.For_test.render_unexpected). *)
@@ -102,7 +102,7 @@ let test_render_unexpected_hides_backtrace () =
   Alcotest.(check int) "exit code 2" 2 code;
   Alcotest.(check bool) "message names the exception" true
     (str_contains message "Exit");
-  Alcotest.(check bool) "no backtrace section without TREE_MD_BACKTRACE" false
+  Alcotest.(check bool) "no backtrace section without TREE_OF_MD_BACKTRACE" false
     (str_contains message "backtrace:")
 
 let test_render_unexpected_shows_backtrace () =
@@ -127,7 +127,7 @@ let test_render_unexpected_reraises_sys_break () =
          (Printexc.get_raw_backtrace ())))
 
 let () =
-  Alcotest.run "tree-md CLI"
+  Alcotest.run "tree_of_md CLI"
     [ ( "exit codes"
       , [ Alcotest.test_case "success" `Quick test_exit_code_success
         ; Alcotest.test_case "source" `Quick test_exit_code_source

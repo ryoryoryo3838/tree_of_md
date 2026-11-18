@@ -36,7 +36,7 @@ type action =
   | Remove_stage of Path_safe.relative
   | Remove_journal
 
-(* Transaction ids name the staging directory (.tree-md-stage/<id>/), so they
+(* Transaction ids name the staging directory (.tree_of_md-stage/<id>/), so they
    are restricted to characters that cannot change the meaning of a path. *)
 let valid_transaction_id id =
   id <> ""
@@ -68,7 +68,7 @@ let create ?base_manifest_sha256 ~transaction_id ~old_manifest
     invalid_arg
       ("Transaction.create: transaction id must match [A-Za-z0-9_-]+: "
       ^ transaction_id);
-  let stage = relative (".tree-md-stage/" ^ transaction_id) in
+  let stage = relative (".tree_of_md-stage/" ^ transaction_id) in
   let manifest_temporary = Path_safe.append stage (relative "manifest.tmp") in
   let new_manifest_sha256 = Manifest.sha256 (Manifest.encode new_manifest) in
   let base_manifest_sha256 =
@@ -198,10 +198,10 @@ let is_lower_hex = function
 let valid_sha256 hash =
   String.length hash = 64 && String.for_all is_lower_hex hash
 
-let has_tree_md_component path =
+let has_tree_of_md_component path =
   List.exists
     (fun component ->
-      String.length component >= 8 && String.sub component 0 8 = ".tree-md")
+      String.starts_with ~prefix:".tree_of_md" component)
     (String.split_on_char '/' path)
 
 let decode_optional_hash path label = function
@@ -217,7 +217,7 @@ let decode_required_hash path label = function
     else field_error path (label ^ " must be 64 lowercase hexadecimal digits")
   | _ -> field_error path (label ^ " must be a string")
 
-(* The staged manifest is always exactly .tree-md-stage/<txn-id>/manifest.tmp,
+(* The staged manifest is always exactly .tree_of_md-stage/<txn-id>/manifest.tmp,
    and its transaction id names the whole staging directory. *)
 let decode_manifest_temporary path = function
   | `String temporary ->
@@ -226,12 +226,12 @@ let decode_manifest_temporary path = function
        field_error path ("invalid new_manifest_temporary path: " ^ message)
      | Ok relative_path ->
        (match String.split_on_char '/' temporary with
-        | [ ".tree-md-stage"; id; "manifest.tmp" ]
+        | [ ".tree_of_md-stage"; id; "manifest.tmp" ]
           when valid_transaction_id id ->
           Ok (relative_path, id)
         | _ ->
           field_error path
-            "new_manifest_temporary must be .tree-md-stage/<txn-id>/manifest.tmp"))
+            "new_manifest_temporary must be .tree_of_md-stage/<txn-id>/manifest.tmp"))
   | _ -> field_error path "new_manifest_temporary must be a string"
 
 let decode_optional_path path label = function
@@ -249,8 +249,8 @@ let validate_output path output =
   match Path_safe.relative output with
   | Error message -> field_error path ("invalid output path: " ^ message)
   | Ok relative_path ->
-    if has_tree_md_component output then
-      field_error path "output path uses a reserved .tree-md component"
+    if has_tree_of_md_component output then
+      field_error path "output path uses a reserved .tree_of_md component"
     else Ok relative_path
 
 (* Exactly three states are valid: create (old null, new and temporary set),
@@ -296,7 +296,7 @@ let decode_operation path id = function
     let* temporary_relative =
       match temporary, new_sha256 with
       | Some temporary_path, Some _ ->
-        let expected = ".tree-md-stage/" ^ id ^ "/" ^ output ^ ".tmp" in
+        let expected = ".tree_of_md-stage/" ^ id ^ "/" ^ output ^ ".tmp" in
         if Path_safe.to_string temporary_path = expected then
           Ok (Some temporary_path)
         else field_error path ("temporary must be " ^ expected)
@@ -375,13 +375,13 @@ let decode ~path contents =
 (* ── Deterministic roll-forward planning ── *)
 
 (* create and decode guarantee new_manifest_temporary has the exact shape
-   .tree-md-stage/<txn-id>/manifest.tmp, so extraction is total for any
+   .tree_of_md-stage/<txn-id>/manifest.tmp, so extraction is total for any
    journal the planner could receive; a stray value is a TM403 precondition. *)
 let stage_root (t : t) =
   match String.split_on_char '/' (Path_safe.to_string t.new_manifest_temporary)
   with
-  | [ ".tree-md-stage"; id; "manifest.tmp" ] when valid_transaction_id id ->
-    (match Path_safe.relative (".tree-md-stage/" ^ id) with
+  | [ ".tree_of_md-stage"; id; "manifest.tmp" ] when valid_transaction_id id ->
+    (match Path_safe.relative (".tree_of_md-stage/" ^ id) with
      | Ok path -> Ok path
      | Error message ->
        Error
@@ -390,7 +390,7 @@ let stage_root (t : t) =
   | _ ->
     Error
       (invalid (Path_safe.to_string t.new_manifest_temporary)
-         "new_manifest_temporary is not inside a .tree-md-stage transaction directory")
+         "new_manifest_temporary is not inside a .tree_of_md-stage transaction directory")
 
 (* The dirname of a validated relative output is itself a valid relative
    path, so the error branch is unreachable for journaled outputs. *)

@@ -5,12 +5,12 @@
    The parser that builds this knows nothing about what any key means. That is
    the whole point: front matter is an arbitrary mapping, and what is required
    of it is declared by a type's JSON Schema rather than wired into the reader.
-   A key tree-md has no use for is simply carried, not rejected. *)
+   A key tree_of_md has no use for is simply carried, not rejected. *)
 
 type t = {
   value : value;
   (* The bytes a scalar was written as, before YAML resolved it to a type.
-     A field tree-md reads as text uses this, so `taxon: 1.50` keeps `1.50`
+     A field tree_of_md reads as text uses this, so `taxon: 1.50` keeps `1.50`
      rather than being rendered back from a float as `1.5`. [None] for a list
      or a mapping. *)
   text : string option;

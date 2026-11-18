@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 (* Front matter reaches this module through the parser, so the tests go through
    it too rather than building trees by hand: what matters is that what the

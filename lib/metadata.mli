@@ -37,19 +37,19 @@ val valid_link_target : string -> bool
 val parse_attribution : string located -> (attribution, Diagnostic.t) result
 val valid_date : string -> bool
 
-(* Read the parts tree-md interprets out of the front matter mapping. Keys it
+(* Read the parts tree_of_md interprets out of the front matter mapping. Keys it
    has no use for are carried, not rejected: mdbase v0.3 §03 makes front matter
    an arbitrary mapping, and an Obsidian vault is full of `aliases`,
    `cssclasses` and `created`, none of which are this compiler's business.
 
-   The one exception is a key within an edit or two of one tree-md does know.
+   The one exception is a key within an edit or two of one tree_of_md does know.
    That is far more likely a typo than a property, and dropping `taxo:` in
    silence would lose a `\taxon{}` with nothing to show for it, so it is
    reported — as a warning, which does not fail the build. *)
 val of_yaml :
   ?id_field:string -> Yaml_json.t option -> raw * Diagnostic.t list
 
-(* The key names tree-md interprets, in the two groups the README documents. *)
+(* The key names tree_of_md interprets, in the two groups the README documents. *)
 val reserved_keys : string list
 val promoted_meta_keys : string list
 

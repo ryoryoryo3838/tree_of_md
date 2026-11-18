@@ -41,9 +41,9 @@ let zero_summary =
 
 let tm path code message = Diagnostic.make code (Span.Path path) message
 
-let manifest_path root = Filename.concat root ".tree-md-manifest.json"
-let journal_path root = Filename.concat root ".tree-md-transaction.json"
-let stage_path root = Filename.concat root ".tree-md-stage"
+let manifest_path root = Filename.concat root ".tree_of_md-manifest.json"
+let journal_path root = Filename.concat root ".tree_of_md-transaction.json"
+let stage_path root = Filename.concat root ".tree_of_md-stage"
 
 let read_file path =
   try
@@ -202,7 +202,7 @@ let observers root paths =
 (* ── read-only check ── *)
 
 (* [content_root] is what a managed path is named below: the directory
-   tree-md.toml is in, which holds the output root and, when `[assets].into`
+   tree_of_md.toml is in, which holds the output root and, when `[assets].into`
    says so, the asset root an attachment is copied under. *)
 let compare_states content_root expecteds old_manifest =
   let expected_by_output =
@@ -285,7 +285,7 @@ let compare_states content_root expecteds old_manifest =
   List.rev !diags
 
 (* A manifest is trusted to say what the compiler owns, and what it owns is
-   deleted when the sources stop producing it. Nothing tree-md writes is ever
+   deleted when the sources stop producing it. Nothing tree_of_md writes is ever
    under a source root — the output root may not overlap one, and neither may
    `[assets].into` — so a manifest that names a file there is not describing
    this compiler's work, and acting on it would delete somebody's note. *)
@@ -344,7 +344,7 @@ let check ~config_path =
      | Error diagnostics -> report diagnostics
      | Ok true ->
        report
-         [ tm (Filename.concat output_root ".tree-md.lock") TM404
+         [ tm (Filename.concat output_root ".tree_of_md.lock") TM404
              "another process holds the build lock; check requires a \
               quiescent workspace" ]
      | Ok false ->
@@ -721,7 +721,7 @@ let normal_build config expecteds =
   let* () = verify_managed content_root old_manifest expecteds in
   let next_manifest = Manifest.of_expected expecteds in
   let txn_id = transaction_id next_manifest in
-  let txn_dir = relative (".tree-md-stage/" ^ txn_id) in
+  let txn_dir = relative (".tree_of_md-stage/" ^ txn_id) in
   let bytes_by_output = expected_bytes expecteds in
   let pure_ops = Manifest.diff ~old:old_manifest ~next:next_manifest in
   let* restored =

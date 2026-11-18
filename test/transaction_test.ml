@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 let h64 c = String.make 64 c
 let h_x_new = h64 '1'
@@ -22,7 +22,7 @@ let expected ~source ~output ~sha256 =
     bytes = "";
     sha256 }
 
-let stage = ".tree-md-stage/txn-1"
+let stage = ".tree_of_md-stage/txn-1"
 let t_a_x = stage ^ "/a/x.tree.tmp"
 let t_a_y = stage ^ "/a/y.tree.tmp"
 let t_b = stage ^ "/b.tree.tmp"
@@ -147,7 +147,7 @@ let create_op ?(old_sha = "null") ?(new_sha = "\"" ^ h_x_new ^ "\"")
   op_json ~output ~old_sha ~new_sha ~temporary
 
 let expect_tm403 name json =
-  match Transaction.decode ~path:"out/.tree-md-transaction.json" json with
+  match Transaction.decode ~path:"out/.tree_of_md-transaction.json" json with
   | Ok _ -> Alcotest.fail (name ^ ": expected TM403")
   | Error diagnostics ->
     let codes =
@@ -174,7 +174,7 @@ let test_create_first_build_canonical () =
     (List.map operation_string t.Transaction.operations);
   let canonical =
     Printf.sprintf
-      "{\n  \"format\": 1,\n  \"base_manifest_sha256\": null,\n  \"new_manifest_sha256\": \"%s\",\n  \"new_manifest_temporary\": \".tree-md-stage/txn-1/manifest.tmp\",\n  \"operations\": []\n}\n"
+      "{\n  \"format\": 1,\n  \"base_manifest_sha256\": null,\n  \"new_manifest_sha256\": \"%s\",\n  \"new_manifest_temporary\": \".tree_of_md-stage/txn-1/manifest.tmp\",\n  \"operations\": []\n}\n"
       (Manifest.sha256 (Manifest.encode (Manifest.of_expected [])))
   in
   Alcotest.(check string) "exact canonical bytes" canonical
@@ -194,7 +194,7 @@ let test_create_mixed_canonical () =
     (List.map operation_string t.Transaction.operations);
   let canonical =
     Printf.sprintf
-      "{\n  \"format\": 1,\n  \"base_manifest_sha256\": \"%s\",\n  \"new_manifest_sha256\": \"%s\",\n  \"new_manifest_temporary\": \".tree-md-stage/txn-1/manifest.tmp\",\n  \"operations\": [\n    {\n      \"output\": \"a/x.tree\",\n      \"old_sha256\": null,\n      \"new_sha256\": \"%s\",\n      \"temporary\": \".tree-md-stage/txn-1/a/x.tree.tmp\"\n    },\n    {\n      \"output\": \"a/y.tree\",\n      \"old_sha256\": null,\n      \"new_sha256\": \"%s\",\n      \"temporary\": \".tree-md-stage/txn-1/a/y.tree.tmp\"\n    },\n    {\n      \"output\": \"b.tree\",\n      \"old_sha256\": \"%s\",\n      \"new_sha256\": \"%s\",\n      \"temporary\": \".tree-md-stage/txn-1/b.tree.tmp\"\n    },\n    {\n      \"output\": \"c.tree\",\n      \"old_sha256\": \"%s\",\n      \"new_sha256\": null,\n      \"temporary\": null\n    }\n  ]\n}\n"
+      "{\n  \"format\": 1,\n  \"base_manifest_sha256\": \"%s\",\n  \"new_manifest_sha256\": \"%s\",\n  \"new_manifest_temporary\": \".tree_of_md-stage/txn-1/manifest.tmp\",\n  \"operations\": [\n    {\n      \"output\": \"a/x.tree\",\n      \"old_sha256\": null,\n      \"new_sha256\": \"%s\",\n      \"temporary\": \".tree_of_md-stage/txn-1/a/x.tree.tmp\"\n    },\n    {\n      \"output\": \"a/y.tree\",\n      \"old_sha256\": null,\n      \"new_sha256\": \"%s\",\n      \"temporary\": \".tree_of_md-stage/txn-1/a/y.tree.tmp\"\n    },\n    {\n      \"output\": \"b.tree\",\n      \"old_sha256\": \"%s\",\n      \"new_sha256\": \"%s\",\n      \"temporary\": \".tree_of_md-stage/txn-1/b.tree.tmp\"\n    },\n    {\n      \"output\": \"c.tree\",\n      \"old_sha256\": \"%s\",\n      \"new_sha256\": null,\n      \"temporary\": null\n    }\n  ]\n}\n"
       base_h new_h h_x_new h_y_new h_b_old h_b_new h_c_old
   in
   Alcotest.(check string) "exact canonical bytes" canonical
@@ -249,7 +249,7 @@ let test_create_invalid_id () =
 let test_round_trip () =
   let t, _, _ = fixture () in
   let encoded = Transaction.encode t in
-  match Transaction.decode ~path:"out/.tree-md-transaction.json" encoded with
+  match Transaction.decode ~path:"out/.tree_of_md-transaction.json" encoded with
   | Error diagnostics ->
     let messages = List.map (fun d -> d.Diagnostic.message) diagnostics in
     Alcotest.fail ("decode failed: " ^ String.concat "; " messages)
@@ -281,7 +281,7 @@ let test_decode_sorts () =
                             ~temporary:("\"" ^ t_a_x ^ "\"") ])
          ())
   in
-  match Transaction.decode ~path:"out/.tree-md-transaction.json" json with
+  match Transaction.decode ~path:"out/.tree_of_md-transaction.json" json with
   | Error diagnostics ->
     let messages = List.map (fun d -> d.Diagnostic.message) diagnostics in
     Alcotest.fail ("decode failed: " ^ String.concat "; " messages)
@@ -339,11 +339,11 @@ let test_tm403_manifest_temporary () =
     expect_tm403 ("manifest temp " ^ temp)
       (object_json (default_fields ~manifest_temp:("\"" ^ temp ^ "\"") ())))
     [ "/abs/manifest.tmp"; "../manifest.tmp";
-      ".tree-md-stage/txn-1/../manifest.tmp";
-      "a\\b"; ".tree-md-stage/txn-1/manifest.tmpx";
-      ".tree-md-stage/txn-1/sub/manifest.tmp";
-      ".tree-md-stage/a.b/manifest.tmp";
-      ".tree-md-stage/txn-1/" ]
+      ".tree_of_md-stage/txn-1/../manifest.tmp";
+      "a\\b"; ".tree_of_md-stage/txn-1/manifest.tmpx";
+      ".tree_of_md-stage/txn-1/sub/manifest.tmp";
+      ".tree_of_md-stage/a.b/manifest.tmp";
+      ".tree_of_md-stage/txn-1/" ]
 
 let test_tm403_operations_wrong_type () =
   expect_tm403 "operations not an array"
@@ -420,7 +420,7 @@ let test_tm403_operation_output_paths () =
             ~operations:(ops_json [ create_op ~output:("\"" ^ output ^ "\"") () ])
             ())))
     [ "./a.tree"; "../a.tree"; "/a.tree"; "a\\b.tree"; "a/./b.tree";
-      "a//b.tree"; "a.html"; ".tree-md-stage/x.tree"; "sub/.tree-md-x/a.tree" ]
+      "a//b.tree"; "a.html"; ".tree_of_md-stage/x.tree"; "sub/.tree_of_md-x/a.tree" ]
 
 let test_tm403_duplicate_output () =
   let ops =
@@ -464,12 +464,12 @@ let test_tm403_temporary_outside_stage () =
                                ~temporary:("\"" ^ temp ^ "\"") ])
             ())))
     [ "a/x.tree.tmp";
-      ".tree-md-stage/other-txn/a/x.tree.tmp";
-      ".tree-md-stage/txn-1/a/other.tree.tmp";
-      ".tree-md-stage/txn-1/a/x.tree";
-      ".tree-md-stage/txn-1/a/x.tree.tmp.tmp";
+      ".tree_of_md-stage/other-txn/a/x.tree.tmp";
+      ".tree_of_md-stage/txn-1/a/other.tree.tmp";
+      ".tree_of_md-stage/txn-1/a/x.tree";
+      ".tree_of_md-stage/txn-1/a/x.tree.tmp.tmp";
       "/abs/x.tree.tmp";
-      ".tree-md-stage/txn-1/a/../x.tree.tmp" ]
+      ".tree_of_md-stage/txn-1/a/../x.tree.tmp" ]
 
 let test_tm403_manifest_temporary_txn_mismatch () =
   let ops =
@@ -478,7 +478,7 @@ let test_tm403_manifest_temporary_txn_mismatch () =
   in
   expect_tm403 "manifest temp txn differs from operations"
     (object_json
-       (default_fields ~manifest_temp:"\".tree-md-stage/other-txn/manifest.tmp\""
+       (default_fields ~manifest_temp:"\".tree_of_md-stage/other-txn/manifest.tmp\""
           ~operations:ops ()))
 
 (* ── roll_forward: committed state ── *)
@@ -486,7 +486,7 @@ let test_tm403_manifest_temporary_txn_mismatch () =
 let test_committed_cleanup () =
   let t, _, new_h = fixture () in
   check_actions "committed cleanup"
-    [ "Remove_stage .tree-md-stage/txn-1"; "Remove_journal" ] t
+    [ "Remove_stage .tree_of_md-stage/txn-1"; "Remove_journal" ] t
     ~current_manifest:(Transaction.Hash new_h)
     ~outputs:
       [ "a/x.tree", h_x_new; "a/y.tree", h_y_new; "b.tree", h_b_new ]
@@ -495,7 +495,7 @@ let test_committed_cleanup () =
 let test_committed_cleanup_leftover_temps () =
   let t, _, new_h = fixture () in
   check_actions "committed cleanup with leftover temps"
-    [ "Remove_stage .tree-md-stage/txn-1"; "Remove_journal" ] t
+    [ "Remove_stage .tree_of_md-stage/txn-1"; "Remove_journal" ] t
     ~current_manifest:(Transaction.Hash new_h)
     ~outputs:
       [ "a/x.tree", h_x_new; "a/y.tree", h_y_new; "b.tree", h_b_new ]
@@ -505,7 +505,7 @@ let test_committed_cleanup_leftover_temps () =
 let test_committed_first_build () =
   let t, new_h = first_build_fixture () in
   check_actions "committed first build"
-    [ "Remove_stage .tree-md-stage/txn-1"; "Remove_journal" ] t
+    [ "Remove_stage .tree_of_md-stage/txn-1"; "Remove_journal" ] t
     ~current_manifest:(Transaction.Hash new_h)
     ~outputs: [ "a/x.tree", h_x_new; "b.tree", h_b_new ]
     ~temps: []
@@ -521,7 +521,7 @@ let test_roll_forward_all_old () =
       "Install_output " ^ t_b ^ " -> b.tree (" ^ h_b_new ^ ")";
       "Delete_output c.tree (" ^ h_c_old ^ ")";
       "Install_manifest " ^ t_manifest ^ " (" ^ new_h ^ ")";
-      "Remove_stage .tree-md-stage/txn-1";
+      "Remove_stage .tree_of_md-stage/txn-1";
       "Remove_journal" ] t
     ~current_manifest:(Transaction.Hash base_h)
     ~outputs:
@@ -536,7 +536,7 @@ let test_roll_forward_partial () =
       "Install_output " ^ t_a_y ^ " -> a/y.tree (" ^ h_y_new ^ ")";
       "Install_output " ^ t_b ^ " -> b.tree (" ^ h_b_new ^ ")";
       "Install_manifest " ^ t_manifest ^ " (" ^ new_h ^ ")";
-      "Remove_stage .tree-md-stage/txn-1";
+      "Remove_stage .tree_of_md-stage/txn-1";
       "Remove_journal" ] t
     ~current_manifest:(Transaction.Hash base_h)
     ~outputs:
@@ -551,7 +551,7 @@ let test_roll_forward_replace_new_and_delete_absent () =
       "Install_output " ^ t_a_x ^ " -> a/x.tree (" ^ h_x_new ^ ")";
       "Install_output " ^ t_a_y ^ " -> a/y.tree (" ^ h_y_new ^ ")";
       "Install_manifest " ^ t_manifest ^ " (" ^ new_h ^ ")";
-      "Remove_stage .tree-md-stage/txn-1";
+      "Remove_stage .tree_of_md-stage/txn-1";
       "Remove_journal" ] t
     ~current_manifest:(Transaction.Hash base_h)
     ~outputs: [ "b.tree", h_b_new ]
@@ -565,7 +565,7 @@ let test_roll_forward_first_build () =
       "Install_output " ^ t_a_x ^ " -> a/x.tree (" ^ h_x_new ^ ")";
       "Install_output " ^ t_b ^ " -> b.tree (" ^ h_b_new ^ ")";
       "Install_manifest " ^ t_manifest ^ " (" ^ new_h ^ ")";
-      "Remove_stage .tree-md-stage/txn-1";
+      "Remove_stage .tree_of_md-stage/txn-1";
       "Remove_journal" ] t
     ~current_manifest:Transaction.Missing
     ~outputs: []
@@ -576,7 +576,7 @@ let test_roll_forward_first_build_partial () =
   check_actions "first build partial progress"
     [ "Install_output " ^ t_b ^ " -> b.tree (" ^ h_b_new ^ ")";
       "Install_manifest " ^ t_manifest ^ " (" ^ new_h ^ ")";
-      "Remove_stage .tree-md-stage/txn-1";
+      "Remove_stage .tree_of_md-stage/txn-1";
       "Remove_journal" ] t
     ~current_manifest:Transaction.Missing
     ~outputs: [ "a/x.tree", h_x_new ]

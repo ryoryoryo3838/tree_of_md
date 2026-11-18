@@ -553,7 +553,7 @@ let check_asset ~into ~attachments ~sources ~claimed ~forest_asset_roots
            [ "the vault keeps it at "
              ^ Path_safe.to_string record.Discovery.config_relative
              ^ ", which is not under an asset root; `[assets].into` in \
-                tree-md.toml says where an attachment a published tree \
+                tree_of_md.toml says where an attachment a published tree \
                 embeds is copied to" ]
        :: diags, resolution, copies)
     | Some (into : Config.attachments) ->

@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 let h64 c = String.make 64 c
 
@@ -7,7 +7,7 @@ let h64 c = String.make 64 c
    /private/var. Every path here would carry that link and every test that
    writes would fail for a reason that has nothing to do with what it tests. *)
 let tmpdir () =
-  let name = Filename.temp_file "tree-md-test-" "" in
+  let name = Filename.temp_file "tree_of_md-test-" "" in
   Unix.unlink name;
   Unix.mkdir name 0o700;
   Unix.realpath name
@@ -104,15 +104,15 @@ let test_snapshot_empty () =
 
 let test_snapshot_with_files () =
   with_tmpdir (fun dir ->
-    write_file (Filename.concat dir ".tree-md-manifest.json") "{}";
-    write_file (Filename.concat dir ".tree-md-transaction.json") "[]";
-    Unix.mkdir (Filename.concat dir ".tree-md-stage") 0o700;
-    write_file (Filename.concat dir ".tree-md-stage/x.tmp") "staged";
+    write_file (Filename.concat dir ".tree_of_md-manifest.json") "{}";
+    write_file (Filename.concat dir ".tree_of_md-transaction.json") "[]";
+    Unix.mkdir (Filename.concat dir ".tree_of_md-stage") 0o700;
+    write_file (Filename.concat dir ".tree_of_md-stage/x.tmp") "staged";
     let s = match Workspace_fs.snapshot ~output_root:dir with Ok s -> s | Error ds -> fail_errs ds in
     Alcotest.(check (option string)) "manifest present" (Some "{}") s.manifest;
     Alcotest.(check (option string)) "journal present" (Some "[]") s.journal;
     Alcotest.(check (list string)) "stage entries present"
-      [".tree-md-stage/x.tmp"] s.stage_entries)
+      [".tree_of_md-stage/x.tmp"] s.stage_entries)
 
 (* ── lock tests ── *)
 
@@ -120,7 +120,7 @@ let test_lock_contention () =
   with_tmpdir (fun dir ->
     lock dir;
     Alcotest.(check bool) "lock file exists" true
-      (exists (Filename.concat dir ".tree-md.lock"));
+      (exists (Filename.concat dir ".tree_of_md.lock"));
     let active = match Workspace_fs.writer_active ~output_root:dir with Ok v -> v | Error ds -> fail_errs ds in
     Alcotest.(check bool) "no writer active after release" false active)
 
@@ -154,7 +154,7 @@ let test_symlink_refusal_ancestor () =
 let test_symlink_refusal_stage () =
   with_tmpdir (fun dir ->
     lock dir;
-    let stage_dir = Filename.concat dir ".tree-md-stage" in
+    let stage_dir = Filename.concat dir ".tree_of_md-stage" in
     Unix.mkdir stage_dir 0o700;
     let real = Filename.concat stage_dir "real" in
     Unix.mkdir real 0o700;
@@ -173,7 +173,7 @@ let test_symlink_refusal_stage () =
         ~new_manifest:new_manifest
         (Manifest.diff ~old:None ~next:new_manifest)
     in
-    let files = [ rel ".tree-md-stage/txn-sym/input.tmp", "content" ] in
+    let files = [ rel ".tree_of_md-stage/txn-sym/input.tmp", "content" ] in
     let (result : (unit, Diagnostic.t list) result) =
       Workspace_fs.stage ~output_root:dir ~journal ~files ~manifest_bytes:"{}" () in
     Alcotest.(check bool) "symlink in stage rejected" true (Result.is_error result))
@@ -201,7 +201,7 @@ let test_stage_and_execute_normal () =
     lock dir;
     let out_content = "tree output content\n" in
     let journal, manifest_bytes, manifest = journal_for_files "txn-normal" [("a.tree", out_content)] in
-    let files = [ rel ".tree-md-stage/txn-normal/a.tree.tmp", out_content ] in
+    let files = [ rel ".tree_of_md-stage/txn-normal/a.tree.tmp", out_content ] in
     let _ = match Workspace_fs.stage ~output_root:dir ~journal ~files ~manifest_bytes () with
       | Ok () -> () | Error ds -> fail_errs ds in
     let snap = match Workspace_fs.snapshot ~output_root:dir with Ok s -> s | Error ds -> fail_errs ds in
@@ -214,10 +214,10 @@ let test_stage_and_execute_normal () =
     Alcotest.(check bool) "output file exists" true (exists output_path);
     Alcotest.(check string) "output content" out_content (read_file output_path);
     Alcotest.(check bool) "journal removed" false
-      (exists (Filename.concat dir ".tree-md-transaction.json"));
+      (exists (Filename.concat dir ".tree_of_md-transaction.json"));
     Alcotest.(check bool) "manifest exists" true
-      (exists (Filename.concat dir ".tree-md-manifest.json"));
-    let stage_root_dir = Filename.concat dir ".tree-md-stage" in
+      (exists (Filename.concat dir ".tree_of_md-manifest.json"));
+    let stage_root_dir = Filename.concat dir ".tree_of_md-stage" in
     Alcotest.(check bool) "stage cleaned" true
       (not (is_dir stage_root_dir) || (
         try Array.length (Sys.readdir stage_root_dir) <= 2
@@ -230,7 +230,7 @@ let test_fault_after_stage () =
     lock dir;
     let content = "b output\n" in
     let journal, manifest_bytes, manifest = journal_for_files "txn-normal" [("b.tree", content)] in
-    let files = [ rel ".tree-md-stage/txn-normal/b.tree.tmp", content ] in
+    let files = [ rel ".tree_of_md-stage/txn-normal/b.tree.tmp", content ] in
     let injected = ref None in
     let inject pt = injected := Some pt; raise (Workspace_fs.Injected_fault pt) in
     let stage_result = Workspace_fs.stage ~inject ~output_root:dir ~journal ~files ~manifest_bytes () in
@@ -250,7 +250,7 @@ let test_fault_after_journal_stage () =
     lock dir;
     let content = "c output\n" in
     let journal, manifest_bytes, _manifest = journal_for_files "txn-normal" [("c.tree", content)] in
-    let files = [ rel ".tree-md-stage/txn-normal/c.tree.tmp", content ] in
+    let files = [ rel ".tree_of_md-stage/txn-normal/c.tree.tmp", content ] in
     let injected = ref None in
     let inject pt = if pt = Workspace_fs.After_journal then (injected := Some pt; raise (Workspace_fs.Injected_fault pt)) in
     let stage_result = Workspace_fs.stage ~inject ~output_root:dir ~journal ~files ~manifest_bytes () in
@@ -261,7 +261,7 @@ let test_fault_after_journal_stage () =
     let snap = match Workspace_fs.snapshot ~output_root:dir with Ok s -> s | Error ds -> fail_errs ds in
     Alcotest.(check bool) "journal present" true (Option.is_some snap.journal);
     Alcotest.(check bool) "stage entries exist" true (List.length snap.stage_entries > 0);
-    let journal_path = Filename.concat dir ".tree-md-transaction.json" in
+    let journal_path = Filename.concat dir ".tree_of_md-transaction.json" in
     let journal_bytes = read_file journal_path in
     let decoded = match Transaction.decode ~path:journal_path journal_bytes with Ok t -> t | Error ds -> fail_errs ds in
     let actions = roll dir decoded ~current_manifest:Transaction.Missing in
@@ -274,9 +274,9 @@ let test_fault_after_output () =
     let manifest_contents = [("d1.tree", "d1 out\n"); ("d2.tree", "d2 out\n"); ("d3.tree", "d3 out\n")] in
     let journal, manifest_bytes, _manifest = journal_for_files "txn-output" manifest_contents in
     let files = [
-      rel ".tree-md-stage/txn-output/d1.tree.tmp", "d1 out\n";
-      rel ".tree-md-stage/txn-output/d2.tree.tmp", "d2 out\n";
-      rel ".tree-md-stage/txn-output/d3.tree.tmp", "d3 out\n";
+      rel ".tree_of_md-stage/txn-output/d1.tree.tmp", "d1 out\n";
+      rel ".tree_of_md-stage/txn-output/d2.tree.tmp", "d2 out\n";
+      rel ".tree_of_md-stage/txn-output/d3.tree.tmp", "d3 out\n";
     ] in
     let _ = match Workspace_fs.stage ~output_root:dir ~journal ~files ~manifest_bytes () with
       | Ok () -> () | Error ds -> fail_errs ds in
@@ -291,7 +291,7 @@ let test_fault_after_output () =
       (Some "After_output 1")
       (Option.map (fun (p : Workspace_fs.fault_point) ->
          match p with Workspace_fs.After_output n -> Printf.sprintf "After_output %d" n | _ -> "other") !injected);
-    let journal_path = Filename.concat dir ".tree-md-transaction.json" in
+    let journal_path = Filename.concat dir ".tree_of_md-transaction.json" in
     let journal_bytes = read_file journal_path in
     let decoded = match Transaction.decode ~path:journal_path journal_bytes with Ok t -> t | Error ds -> fail_errs ds in
     let recover_actions = roll dir decoded ~current_manifest:Transaction.Missing in
@@ -300,14 +300,14 @@ let test_fault_after_output () =
     Alcotest.(check bool) "d2 exists" true (exists (Filename.concat dir "d2.tree"));
     Alcotest.(check bool) "d3 exists" true (exists (Filename.concat dir "d3.tree"));
     Alcotest.(check bool) "journal removed" false
-      (exists (Filename.concat dir ".tree-md-transaction.json")))
+      (exists (Filename.concat dir ".tree_of_md-transaction.json")))
 
 let test_fault_after_manifest () =
   with_tmpdir (fun dir ->
     lock dir;
     let content = "e output\n" in
     let journal, manifest_bytes, manifest = journal_for_files "txn-manifest" [("e.tree", content)] in
-    let files = [ rel ".tree-md-stage/txn-manifest/e.tree.tmp", content ] in
+    let files = [ rel ".tree_of_md-stage/txn-manifest/e.tree.tmp", content ] in
     let _ = match Workspace_fs.stage ~output_root:dir ~journal ~files ~manifest_bytes () with
       | Ok () -> () | Error ds -> fail_errs ds in
     let actions = roll dir journal ~current_manifest:Transaction.Missing in
@@ -322,7 +322,7 @@ let test_fault_after_manifest () =
       (Option.map (fun (p : Workspace_fs.fault_point) ->
          match p with Workspace_fs.After_manifest -> "After_manifest" | _ -> "other") !injected);
     Alcotest.(check bool) "e.tree exists by rename" true (exists (Filename.concat dir "e.tree"));
-    let journal_path = Filename.concat dir ".tree-md-transaction.json" in
+    let journal_path = Filename.concat dir ".tree_of_md-transaction.json" in
     if exists journal_path then begin
       let journal_bytes = read_file journal_path in
       let decoded = match Transaction.decode ~path:journal_path journal_bytes with Ok t -> t | Error ds -> fail_errs ds in
@@ -339,7 +339,7 @@ let test_orphan_stage_with_journal () =
     lock dir;
     let content = "f out\n" in
     let journal, manifest_bytes, _manifest = journal_for_files "txn-normal" [("f.tree", content)] in
-    let files = [ rel ".tree-md-stage/txn-normal/f.tree.tmp", content ] in
+    let files = [ rel ".tree_of_md-stage/txn-normal/f.tree.tmp", content ] in
     let () = match Workspace_fs.stage ~output_root:dir ~journal ~files ~manifest_bytes () with
       | Ok () -> () | Error ds -> fail_errs ds in
     let () = match Workspace_fs.remove_orphan_stage ~output_root:dir with Ok () -> () | Error ds -> fail_errs ds in
@@ -348,7 +348,7 @@ let test_orphan_stage_with_journal () =
 
 let test_orphan_stage_cleanup () =
   with_tmpdir (fun dir ->
-    let stage_dir = Filename.concat dir ".tree-md-stage" in
+    let stage_dir = Filename.concat dir ".tree_of_md-stage" in
     Unix.mkdir stage_dir 0o700;
     let txn_dir = Filename.concat stage_dir "orphan-txn" in
     Unix.mkdir txn_dir 0o700;
@@ -364,15 +364,15 @@ let test_durability_barriers () =
     lock dir;
     let content = "barrier out\n" in
     let journal, manifest_bytes, _manifest = journal_for_files "txn-barrier" [("sub/h.tree", content)] in
-    let files = [ rel ".tree-md-stage/txn-barrier/sub/h.tree.tmp", content ] in
+    let files = [ rel ".tree_of_md-stage/txn-barrier/sub/h.tree.tmp", content ] in
     let _ = match Workspace_fs.stage ~output_root:dir ~journal ~files ~manifest_bytes () with
       | Ok () -> () | Error ds -> fail_errs ds in
-    let stage_sub = Filename.concat dir ".tree-md-stage/txn-barrier/sub" in
+    let stage_sub = Filename.concat dir ".tree_of_md-stage/txn-barrier/sub" in
     Alcotest.(check bool) "stage sub dir created" true (is_dir stage_sub);
     let actions = roll dir journal ~current_manifest:Transaction.Missing in
     let () = match Workspace_fs.execute ~output_root:dir actions () with Ok () -> () | Error ds -> fail_errs ds in
     Alcotest.(check bool) "subdir output exists" true (exists (Filename.concat dir "sub/h.tree"));
-    Alcotest.(check bool) "stage cleaned" false (is_dir (Filename.concat dir ".tree-md-stage/txn-barrier")))
+    Alcotest.(check bool) "stage cleaned" false (is_dir (Filename.concat dir ".tree_of_md-stage/txn-barrier")))
 
 (* ── regression tests ── *)
 
@@ -414,11 +414,11 @@ let test_writer_active_cross_process () =
       let free = match Workspace_fs.writer_active ~output_root:dir with Ok v -> v | Error ds -> fail_errs ds in
       Alcotest.(check bool) "writer_active false after child releases lock" false free)
 
-(* C3: symlink placed inside .tree-md-stage must trigger refusal (TM403)
+(* C3: symlink placed inside .tree_of_md-stage must trigger refusal (TM403)
    from rmdir_rf_checked during orphan cleanup and Remove_stage. *)
 let test_symlink_in_stage_cleanup () =
   with_tmpdir (fun dir ->
-    let stage_dir = Filename.concat dir ".tree-md-stage" in
+    let stage_dir = Filename.concat dir ".tree_of_md-stage" in
     Unix.mkdir stage_dir 0o700;
     let txn_dir = Filename.concat stage_dir "orphan-txn" in
     Unix.mkdir txn_dir 0o700;
@@ -438,7 +438,7 @@ let test_duplicate_journal () =
     lock dir;
     let content = "dup out\n" in
     let journal, manifest_bytes, _manifest = journal_for_files "txn-dup" [("dup.tree", content)] in
-    let files = [ rel ".tree-md-stage/txn-dup/dup.tree.tmp", content ] in
+    let files = [ rel ".tree_of_md-stage/txn-dup/dup.tree.tmp", content ] in
     (* First stage should succeed *)
     let _ = match Workspace_fs.stage ~output_root:dir ~journal ~files ~manifest_bytes () with
       | Ok () -> () | Error ds -> fail_errs ds in
@@ -454,7 +454,7 @@ let test_symlink_output_delete () =
     let output_path = Filename.concat dir "out.tree" in
     Unix.symlink "/etc/passwd" output_path;
     let journal, manifest_bytes, _ = journal_for_files "txn-out" [("out.tree", content)] in
-    let files = [ rel ".tree-md-stage/txn-out/out.tree.tmp", content ] in
+    let files = [ rel ".tree_of_md-stage/txn-out/out.tree.tmp", content ] in
     let _ = match Workspace_fs.stage ~output_root:dir ~journal ~files ~manifest_bytes () with
       | Ok () -> () | Error ds -> fail_errs ds in
     let rejected = match Transaction.roll_forward journal
@@ -477,10 +477,10 @@ let test_deep_nesting_durability () =
     lock dir;
     let content = "deep nested content\n" in
     let journal, manifest_bytes, _manifest = journal_for_files "txn-deep" [("a/b/c.tree", content)] in
-    let files = [ rel ".tree-md-stage/txn-deep/a/b/c.tree.tmp", content ] in
+    let files = [ rel ".tree_of_md-stage/txn-deep/a/b/c.tree.tmp", content ] in
     let _ = match Workspace_fs.stage ~output_root:dir ~journal ~files ~manifest_bytes () with
       | Ok () -> () | Error ds -> fail_errs ds in
-    let stage_deep = Filename.concat dir ".tree-md-stage/txn-deep/a/b" in
+    let stage_deep = Filename.concat dir ".tree_of_md-stage/txn-deep/a/b" in
     Alcotest.(check bool) "stage subdirs created" true (is_dir stage_deep);
     let actions = roll dir journal ~current_manifest:Transaction.Missing in
     let _ = match Workspace_fs.execute ~output_root:dir actions () with
@@ -489,14 +489,14 @@ let test_deep_nesting_durability () =
     Alcotest.(check bool) "intermediate dir a exists" true (is_dir (Filename.concat dir "a"));
     Alcotest.(check bool) "intermediate dir a/b exists" true (is_dir (Filename.concat dir "a/b"));
     Alcotest.(check bool) "journal removed" false
-      (exists (Filename.concat dir ".tree-md-transaction.json")))
+      (exists (Filename.concat dir ".tree_of_md-transaction.json")))
 
-(* Important-2: snapshot must not follow symlinks in .tree-md-stage.
-   A symlink-to-stage pointing back to .tree-md-stage creates a cycle;
+(* Important-2: snapshot must not follow symlinks in .tree_of_md-stage.
+   A symlink-to-stage pointing back to .tree_of_md-stage creates a cycle;
    the lstat-based walk must skip it without hanging. *)
 let test_snapshot_symlink_safety () =
   with_tmpdir (fun dir ->
-    let stage_dir = Filename.concat dir ".tree-md-stage" in
+    let stage_dir = Filename.concat dir ".tree_of_md-stage" in
     Unix.mkdir stage_dir 0o700;
     let txn_dir = Filename.concat stage_dir "safe-txn" in
     Unix.mkdir txn_dir 0o700;

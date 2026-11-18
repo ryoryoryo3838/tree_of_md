@@ -1,4 +1,4 @@
-(* A diagnostic carries two independent identifiers. [code] is tree-md's own
+(* A diagnostic carries two independent identifiers. [code] is tree_of_md's own
    stable code, which the README documents and the CLI's exit-code classes are
    derived from. [mdbase_code] is the canonical mdbase v0.3 code for the same
    condition, in lower snake_case, present only where mdbase defines one. Both

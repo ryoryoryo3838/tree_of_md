@@ -1,4 +1,4 @@
-open Tree_md
+open Tree_of_md_legacy
 
 (* Each compile stage now returns its warnings alongside the value it
    produced. These suites assert on the value, so they drop the warnings. *)
@@ -53,7 +53,7 @@ let render_diagnostics name diagnostics =
   name ^ ": " ^ messages
 
 let load_and_scan workspace =
-  let config_path = resolve_fixture_path (workspace ^ "/tree-md.toml") in
+  let config_path = resolve_fixture_path (workspace ^ "/tree_of_md.toml") in
   match Config.load ~path:config_path with
   | Error diagnostics ->
     Alcotest.fail (render_diagnostics "config load failed" diagnostics)
@@ -148,7 +148,7 @@ let test_bad_forest_diagnostics () =
       (contains (message_of "TM102") "raw block HTML")
 
 let make_config ~root =
-  ({ Config.path = Filename.concat root "tree-md.toml";
+  ({ Config.path = Filename.concat root "tree_of_md.toml";
      directory = root;
      forest = {
        Config.path = Filename.concat root "forest.toml";
@@ -166,7 +166,7 @@ let make_config ~root =
     : Config.t)
 
 let with_temp_dir f =
-  let root = Filename.temp_file "tree-md-compile-" ".dir" in
+  let root = Filename.temp_file "tree_of_md-compile-" ".dir" in
   Sys.remove root;
   Unix.mkdir root 0o700;
   let rec remove path =

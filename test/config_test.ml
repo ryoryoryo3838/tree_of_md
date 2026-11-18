@@ -1,8 +1,8 @@
-open Tree_md
+open Tree_of_md_legacy
 
 let target = "forester-6.0-dev@30b73641cef02433ee158db6ddc77f7b49de60be"
 
-let valid_tree_md =
+let valid_tree_of_md =
   "version = 1\n" ^
   "forest = \"forest/forest.toml\"\n" ^
   "sources = [\"sources/trees\", \"sources/notes\"]\n" ^
@@ -26,8 +26,8 @@ let fixture_path relative =
   in
   let candidates = [
     Filename.concat "fixtures" relative;
-    Filename.concat "tools/tree-md/test/fixtures" relative;
-    Filename.concat build_root ("tools/tree-md/test/fixtures/" ^ relative);
+    Filename.concat "tools/tree_of_md/test/fixtures" relative;
+    Filename.concat build_root ("tools/tree_of_md/test/fixtures/" ^ relative);
   ] in
   match List.find_opt Sys.file_exists candidates with
   | Some path -> Unix.realpath path
@@ -40,12 +40,12 @@ let write_file path contents =
     (fun () -> output_string channel contents)
 
 let with_temp_project tree_contents forest_contents f =
-  let root = Filename.temp_file "tree-md-config-" ".dir" in
+  let root = Filename.temp_file "tree_of_md-config-" ".dir" in
   Sys.remove root;
   Unix.mkdir root 0o700;
   let forest_directory = Filename.concat root "forest" in
   Unix.mkdir forest_directory 0o700;
-  let tree_path = Filename.concat root "tree-md.toml" in
+  let tree_path = Filename.concat root "tree_of_md.toml" in
   let forest_path = Filename.concat forest_directory "forest.toml" in
   write_file tree_path tree_contents;
   write_file forest_path forest_contents;
@@ -58,7 +58,7 @@ let with_temp_project tree_contents forest_contents f =
     (fun () -> f tree_path)
 
 let with_different_cwd f =
-  let directory = Filename.temp_file "tree-md-cwd-" ".dir" in
+  let directory = Filename.temp_file "tree_of_md-cwd-" ".dir" in
   Sys.remove directory;
   Unix.mkdir directory 0o700;
   let original = Sys.getcwd () in
@@ -109,7 +109,7 @@ let pair_strings pairs =
     (Path_safe.to_string relative, resolved)) pairs
 
 let test_valid_path_bases () =
-  let config_path = fixture_path "config/valid/tree-md.toml" in
+  let config_path = fixture_path "config/valid/tree_of_md.toml" in
   let config_directory = Filename.dirname config_path in
   let forest_directory = config_directory in
   with_different_cwd (fun () ->
@@ -141,7 +141,7 @@ let test_valid_path_bases () =
         (pair_strings config.forest.asset_roots))
 
 let test_valid_nested_forest_path_bases () =
-  let config_path = fixture_path "config/nested/tree-md.toml" in
+  let config_path = fixture_path "config/nested/tree_of_md.toml" in
   let config_directory = Filename.dirname config_path in
   let forest_directory = Filename.concat config_directory "forest" in
   with_different_cwd (fun () ->
@@ -172,21 +172,21 @@ let test_valid_nested_forest_path_bases () =
         (pair_strings config.forest.asset_roots))
 
 let test_missing_file () =
-  let path = Filename.concat (Filename.get_temp_dir_name ()) "tree-md-missing.toml" in
+  let path = Filename.concat (Filename.get_temp_dir_name ()) "tree_of_md-missing.toml" in
   expect_tm401 "missing file" (Config.load ~path)
 
 let test_wrong_version () =
-  let contents = "version = 2\n" ^ String.sub valid_tree_md 12 (String.length valid_tree_md - 12) in
+  let contents = "version = 2\n" ^ String.sub valid_tree_of_md 12 (String.length valid_tree_of_md - 12) in
   with_temp_project contents valid_forest (fun path ->
     expect_tm401 "wrong version" (Config.load ~path))
 
 let test_unknown_field () =
-  with_temp_project (valid_tree_md ^ "extra = true\n") valid_forest (fun path ->
+  with_temp_project (valid_tree_of_md ^ "extra = true\n") valid_forest (fun path ->
     expect_tm401 "unknown field" (Config.load ~path))
 
 (* No [id] section means Forester's own convention. *)
 let test_id_defaults () =
-  with_temp_project valid_tree_md valid_forest (fun path ->
+  with_temp_project valid_tree_of_md valid_forest (fun path ->
     match Config.load ~path with
     | Error _ -> Alcotest.fail "expected the default id policy to load"
     | Ok config ->
@@ -200,7 +200,7 @@ let test_id_defaults () =
 
 let test_id_overrides () =
   let contents =
-    valid_tree_md ^ "[id]\nalphabet = \"0123456789\"\nwidth = 3\n" ^
+    valid_tree_of_md ^ "[id]\nalphabet = \"0123456789\"\nwidth = 3\n" ^
     "scheme = \"random\"\nprefix = \"mlnet-\"\nmint = \"off\"\n"
   in
   with_temp_project contents valid_forest (fun path ->
@@ -219,7 +219,7 @@ let test_id_overrides () =
    trips over an unusable address. *)
 let test_id_rejects_unusable_policy () =
   let case name body =
-    with_temp_project (valid_tree_md ^ body) valid_forest (fun path ->
+    with_temp_project (valid_tree_of_md ^ body) valid_forest (fun path ->
       expect_tm401 name (Config.load ~path))
   in
   case "alphabet with a space" "[id]\nalphabet = \"01 2\"\n";
@@ -248,52 +248,52 @@ let test_unsupported_target () =
   with_temp_project contents valid_forest (fun path ->
     expect_tm401 "unsupported target" (Config.load ~path))
 
-let tree_md_with_sources sources =
+let tree_of_md_with_sources sources =
   "version = 1\nforest = \"forest/forest.toml\"\n" ^
   "sources = " ^ sources ^ "\noutput = \"forest/generated\"\n" ^
   "target = \"" ^ target ^ "\"\n"
 
 let test_absolute_path () =
-  with_temp_project (tree_md_with_sources "[\"/outside\"]") valid_forest (fun path ->
+  with_temp_project (tree_of_md_with_sources "[\"/outside\"]") valid_forest (fun path ->
     expect_tm401 "absolute path" (Config.load ~path))
 
 let test_empty_segment () =
-  with_temp_project (tree_md_with_sources "[\"a//b\"]") valid_forest (fun path ->
+  with_temp_project (tree_of_md_with_sources "[\"a//b\"]") valid_forest (fun path ->
     expect_tm401 "empty segment" (Config.load ~path))
 
 let test_dot_segment () =
-  with_temp_project (tree_md_with_sources "[\".\"]") valid_forest (fun path ->
+  with_temp_project (tree_of_md_with_sources "[\".\"]") valid_forest (fun path ->
     expect_tm401 "dot segment" (Config.load ~path))
 
 let test_dot_dot_segment () =
-  with_temp_project (tree_md_with_sources "[\"..\"]") valid_forest (fun path ->
+  with_temp_project (tree_of_md_with_sources "[\"..\"]") valid_forest (fun path ->
     expect_tm401 "dot-dot segment" (Config.load ~path))
 
 let test_backslash_path () =
-  with_temp_project (tree_md_with_sources "[\"a\\\\b\"]") valid_forest (fun path ->
+  with_temp_project (tree_of_md_with_sources "[\"a\\\\b\"]") valid_forest (fun path ->
     expect_tm401 "backslash path" (Config.load ~path))
 
 let test_source_output_overlap () =
-  with_temp_project (tree_md_with_sources "[\"forest\"]") valid_forest (fun path ->
+  with_temp_project (tree_of_md_with_sources "[\"forest\"]") valid_forest (fun path ->
     expect_tm401 "source/output overlap" (Config.load ~path))
 
 let test_duplicate_source_root () =
-  with_temp_project (tree_md_with_sources "[\"sources/trees\", \"sources/trees\"]")
+  with_temp_project (tree_of_md_with_sources "[\"sources/trees\", \"sources/trees\"]")
     valid_forest (fun path -> expect_tm401 "duplicate source" (Config.load ~path))
 
 let test_output_absent_from_forest_trees () =
   let forest = "[forest]\ntrees = [\"handwritten\"]\nassets = [\"assets\"]\n" in
-  with_temp_project valid_tree_md forest (fun path ->
+  with_temp_project valid_tree_of_md forest (fun path ->
     expect_tm401 "output absent from trees" (Config.load ~path))
 
 let test_non_string_tree_member () =
   let forest = "[forest]\ntrees = [1]\nassets = [\"assets\"]\n" in
-  with_temp_project valid_tree_md forest (fun path ->
+  with_temp_project valid_tree_of_md forest (fun path ->
     expect_tm401 "non-string tree member" (Config.load ~path))
 
 let test_non_string_asset_member () =
   let forest = "[forest]\ntrees = [\"generated\"]\nassets = [true]\n" in
-  with_temp_project valid_tree_md forest (fun path ->
+  with_temp_project valid_tree_of_md forest (fun path ->
     expect_tm401 "non-string asset member" (Config.load ~path))
 
 let test_syntax_error_is_path_prefixed () =
@@ -313,7 +313,7 @@ let test_syntax_error_is_path_prefixed () =
 (* Absent means every source is published, which is what every forest did
    before the table existed. *)
 let test_publish_absent_publishes_everything () =
-  with_temp_project valid_tree_md valid_forest (fun path ->
+  with_temp_project valid_tree_of_md valid_forest (fun path ->
     match Config.load ~path with
     | Error diagnostics ->
       Alcotest.fail
@@ -325,7 +325,7 @@ let test_publish_absent_publishes_everything () =
 
 let test_publish_from_is_read () =
   with_temp_project
-    (valid_tree_md ^ "\n[publish]\nfrom = [\"PUBLIC/**\", \"notes/*.tree.md\"]\n")
+    (valid_tree_of_md ^ "\n[publish]\nfrom = [\"PUBLIC/**\", \"notes/*.tree.md\"]\n")
     valid_forest
     (fun path ->
       match Config.load ~path with
@@ -341,21 +341,21 @@ let test_publish_from_is_read () =
 (* The table's presence is what turns selection on, so a table naming nothing
    would publish nothing — never what was meant. *)
 let test_publish_from_must_name_something () =
-  with_temp_project (valid_tree_md ^ "\n[publish]\nfrom = []\n") valid_forest
+  with_temp_project (valid_tree_of_md ^ "\n[publish]\nfrom = []\n") valid_forest
     (fun path -> expect_tm401 "empty from" (Config.load ~path));
-  with_temp_project (valid_tree_md ^ "\n[publish]\n") valid_forest
+  with_temp_project (valid_tree_of_md ^ "\n[publish]\n") valid_forest
     (fun path -> expect_tm401 "missing from" (Config.load ~path));
-  with_temp_project (valid_tree_md ^ "\n[publish]\nfrom = [\"\"]\n") valid_forest
+  with_temp_project (valid_tree_of_md ^ "\n[publish]\nfrom = [\"\"]\n") valid_forest
     (fun path -> expect_tm401 "empty pattern" (Config.load ~path))
 
 let test_publish_key_set_is_closed () =
   with_temp_project
-    (valid_tree_md ^ "\n[publish]\nfrom = [\"a/**\"]\nexcept = [\"b/**\"]\n")
+    (valid_tree_of_md ^ "\n[publish]\nfrom = [\"a/**\"]\nexcept = [\"b/**\"]\n")
     valid_forest
     (fun path -> expect_tm401 "unknown publish key" (Config.load ~path))
 
 let test_publish_from_must_be_strings () =
-  with_temp_project (valid_tree_md ^ "\n[publish]\nfrom = [1]\n") valid_forest
+  with_temp_project (valid_tree_of_md ^ "\n[publish]\nfrom = [1]\n") valid_forest
     (fun path -> expect_tm401 "non-string pattern" (Config.load ~path))
 
 (* ── glob matching ── *)
@@ -387,7 +387,7 @@ let expect_config name path =
                        (List.map (fun d -> d.Diagnostic.message) diagnostics))
 
 let test_assets_absent_publishes_no_attachment () =
-  with_temp_project valid_tree_md valid_forest (fun path ->
+  with_temp_project valid_tree_of_md valid_forest (fun path ->
     let config = expect_config "valid config rejected" path in
     Alcotest.(check bool) "no destination" true
       (config.Config.attachments = None))
@@ -396,14 +396,14 @@ let test_assets_absent_publishes_no_attachment () =
    which is where Forester plants what it finds under an asset root. *)
 let test_assets_into_is_read () =
   with_temp_project
-    (valid_tree_md ^ "\n[assets]\ninto = \"forest/assets/vault\"\n")
+    (valid_tree_of_md ^ "\n[assets]\ninto = \"forest/assets/vault\"\n")
     valid_forest
     (fun path ->
       let config = expect_config "assets table rejected" path in
       match config.Config.attachments with
       | None -> Alcotest.fail "the destination was dropped"
       | Some into ->
-        Alcotest.(check string) "named as tree-md.toml writes it"
+        Alcotest.(check string) "named as tree_of_md.toml writes it"
           "forest/assets/vault"
           (Path_safe.to_string into.Config.config_relative);
         Alcotest.(check string) "resolved against the configuration directory"
@@ -416,12 +416,12 @@ let test_assets_into_is_read () =
    to be under a directory forest.assets names. *)
 let test_assets_into_must_be_under_an_asset_root () =
   with_temp_project
-    (valid_tree_md ^ "\n[assets]\ninto = \"attachments\"\n")
+    (valid_tree_of_md ^ "\n[assets]\ninto = \"attachments\"\n")
     valid_forest
     (fun path -> expect_tm401 "outside the asset roots" (Config.load ~path))
 
 let test_assets_into_may_not_overlap_a_source_root () =
-  let tree_md =
+  let tree_of_md =
     "version = 1\n\
      forest = \"forest/forest.toml\"\n\
      sources = [\"forest/assets/notes\"]\n\
@@ -429,7 +429,7 @@ let test_assets_into_may_not_overlap_a_source_root () =
      target = \"" ^ target ^ "\"\n\n\
      [assets]\ninto = \"forest/assets\"\n"
   in
-  with_temp_project tree_md valid_forest (fun path ->
+  with_temp_project tree_of_md valid_forest (fun path ->
     expect_tm401 "overlaps a source root" (Config.load ~path))
 
 let test_assets_into_may_not_overlap_the_output_root () =
@@ -438,17 +438,17 @@ let test_assets_into_may_not_overlap_the_output_root () =
      assets = [\"generated\"]\n"
   in
   with_temp_project
-    (valid_tree_md ^ "\n[assets]\ninto = \"forest/generated/vault\"\n")
+    (valid_tree_of_md ^ "\n[assets]\ninto = \"forest/generated/vault\"\n")
     forest
     (fun path -> expect_tm401 "overlaps the output root" (Config.load ~path))
 
 let test_assets_key_set_is_closed () =
   with_temp_project
-    (valid_tree_md ^ "\n[assets]\ninto = \"forest/assets\"\nfrom = [\"x\"]\n")
+    (valid_tree_of_md ^ "\n[assets]\ninto = \"forest/assets\"\nfrom = [\"x\"]\n")
     valid_forest
     (fun path -> expect_tm401 "unknown assets key" (Config.load ~path));
   with_temp_project
-    (valid_tree_md ^ "\n[assets]\n")
+    (valid_tree_of_md ^ "\n[assets]\n")
     valid_forest
     (fun path -> expect_tm401 "assets table without into" (Config.load ~path))
 

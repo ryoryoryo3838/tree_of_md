@@ -1,7 +1,7 @@
-tree-md CLI: build and check subcommands with exact diagnostics and exit
+tree_of_md CLI: build and check subcommands with exact diagnostics and exit
 codes 0/1/2. Each scenario copies a fixture workspace into the testcase
-root first, so writes never touch the repository fixtures. The tree-md
-binary is linked onto PATH by the cram stanza's %{bin:tree-md} dep; the
+root first, so writes never touch the repository fixtures. The tree_of_md
+binary is linked onto PATH by the cram stanza's %{bin:tree_of_md_legacy} dep; the
 fixtures are available next to the cram directory.
 
   $ cp -rL ../fixtures/workspaces/clean clean
@@ -13,7 +13,7 @@ fixtures are available next to the cram directory.
 
 --version prints the package version and exits 0.
 
-  $ tree-md --version
+  $ tree_of_md_legacy --version
   0.1.0
 
 --help documents the root command, its subcommands, and the exit codes.
@@ -21,12 +21,12 @@ The format is named rather than left to `auto`, which renders through
 groff when a pager is around and through cmdliner's own formatter when
 one is not — two different-looking man pages for the same binary.
 
-  $ tree-md --help=plain
+  $ tree_of_md_legacy --help=plain
   NAME
-         tree-md - Compile strict Markdown into Forester tree source.
+         tree_of_md_legacy - Compile strict Markdown into Forester tree source.
   
   SYNOPSIS
-         tree-md COMMAND …
+         tree_of_md_legacy COMMAND …
   
   COMMANDS
          build [--config=PATH] [OPTION]…
@@ -45,7 +45,7 @@ one is not — two different-looking man pages for the same binary.
              Show version information.
   
   EXIT STATUS
-         tree-md exits with:
+         tree_of_md_legacy exits with:
   
          0   on success; check also confirms a clean generated state.
   
@@ -60,53 +60,55 @@ Usage errors (missing command, unknown command, unknown option) print
 cmdliner's usage text to stderr and exit 2. TERM=dumb keeps the error
 formatter's output plain across environments.
 
-  $ TERM=dumb tree-md
-  Usage: tree-md [--help] COMMAND …
-  tree-md: required COMMAND name is missing, must be either 'build' or 'check'
+  $ TERM=dumb tree_of_md_legacy
+  Usage: tree_of_md_legacy [--help] COMMAND …
+  tree_of_md_legacy: required COMMAND name is missing, must be either 'build'
+                     or 'check'
   [2]
 
-  $ TERM=dumb tree-md frobnicate
-  Usage: tree-md [--help] COMMAND …
-  tree-md: unknown command 'frobnicate'. Must be either 'build' or 'check'
+  $ TERM=dumb tree_of_md_legacy frobnicate
+  Usage: tree_of_md_legacy [--help] COMMAND …
+  tree_of_md_legacy: unknown command 'frobnicate'. Must be either 'build' or
+                     'check'
   [2]
 
-  $ TERM=dumb tree-md check --bogus
-  Usage: tree-md check [--help] [--config=PATH] [OPTION]…
-  tree-md: unknown option '--bogus'
+  $ TERM=dumb tree_of_md_legacy check --bogus
+  Usage: tree_of_md_legacy check [--help] [--config=PATH] [OPTION]…
+  tree_of_md_legacy: unknown option '--bogus'
   [2]
 
 A pristine workspace reports each missing generated output as TM301 and
 exits 1 without writing.
 
-  $ tree-md check --config clean/tree-md.toml
+  $ tree_of_md_legacy check --config clean/tree_of_md.toml
   TM301: error: missing generated output
     --> $TESTCASE_ROOT/clean/generated/index.tree
   [1]
 
 A successful build prints one summary line to stdout and exits 0.
 
-  $ tree-md build --config clean/tree-md.toml
+  $ tree_of_md_legacy build --config clean/tree_of_md.toml
   build: 1 created, 0 replaced, 0 deleted, 0 unchanged
 
 A check after a successful build is silent and exits 0.
 
-  $ tree-md check --config clean/tree-md.toml
+  $ tree_of_md_legacy check --config clean/tree_of_md.toml
 
-With the default ./tree-md.toml and no upward search, running from a
-directory whose ancestor holds tree-md.toml is a TM401 configuration
+With the default ./tree_of_md.toml and no upward search, running from a
+directory whose ancestor holds tree_of_md.toml is a TM401 configuration
 failure and exits 2.
 
   $ cp -rL ../fixtures/workspaces/clean ancestor
   $ mkdir -p ancestor/a/b
-  $ (cd ancestor/a/b && tree-md check)
-  TM401: error: ./tree-md.toml: cannot read file: ./tree-md.toml: No such file or directory
-    --> ./tree-md.toml
+  $ (cd ancestor/a/b && tree_of_md_legacy check)
+  TM401: error: ./tree_of_md.toml: cannot read file: ./tree_of_md.toml: No such file or directory
+    --> ./tree_of_md.toml
   [2]
 
 Source diagnostics print path:line:column with an excerpt and caret and
 exit 1.
 
-  $ tree-md check --config source-bad/tree-md.toml
+  $ tree_of_md_legacy check --config source-bad/tree_of_md.toml
   TM202: error: unresolved wiki link "missing"
     --> $TESTCASE_ROOT/source-bad/trees-md/alpha.tree.md:3:1
      |
@@ -132,7 +134,7 @@ exit 1.
 A build with source diagnostics prints the same diagnostics to stderr,
 prints no summary line, and exits 1 without writing any output.
 
-  $ tree-md build --config source-bad/tree-md.toml
+  $ tree_of_md_legacy build --config source-bad/tree_of_md.toml
   TM202: error: unresolved wiki link "missing"
     --> $TESTCASE_ROOT/source-bad/trees-md/alpha.tree.md:3:1
      |
@@ -159,9 +161,9 @@ prints no summary line, and exits 1 without writing any output.
 A generated output modified after a build is reported by check as TM302
 and exits 1.
 
-  $ tree-md build --config compile/tree-md.toml >/dev/null
+  $ tree_of_md_legacy build --config compile/tree_of_md.toml >/dev/null
   $ printf 'tampered\n' > compile/generated/index.tree
-  $ tree-md check --config compile/tree-md.toml
+  $ tree_of_md_legacy check --config compile/tree_of_md.toml
   TM302: error: modified generated output: hash does not match the manifest
     --> $TESTCASE_ROOT/compile/generated/index.tree
   [1]
@@ -170,7 +172,7 @@ An unsupported target in the configuration is a TM401 configuration
 error and exits 2.
 
   $ printf 'version = 1\nforest = "forest.toml"\nsources = ["trees-md"]\noutput = "generated"\ntarget = "bogus-target"\n' > unsupported.toml
-  $ tree-md check --config unsupported.toml
+  $ tree_of_md_legacy check --config unsupported.toml
   TM401: error: unsupported.toml: unsupported target
     --> unsupported.toml
   [2]
@@ -180,7 +182,7 @@ A file name is a search key, not an address. Notes called 日本語のノート 
 Obsidian autocompletes. A note with no H1 is titled by its file, because the
 address it was given is a number and a number is not a title.
 
-  $ tree-md build --config unicode/tree-md.toml
+  $ tree_of_md_legacy build --config unicode/tree_of_md.toml
   TM202: warning: "dup" names more than one file; resolved by mdbase link order (nearest folder, then shortest path). Give the tree an `id:` and reference that to say which one you mean
     --> $TESTCASE_ROOT/unicode/trees-md/refer.tree.md:7:1
      |
@@ -201,14 +203,14 @@ address it was given is a number and a number is not a title.
 A second build has nothing to do, and check agrees the state is clean. The
 ambiguity warning stands — it is a warning, so it never fails either one.
 
-  $ tree-md build --config unicode/tree-md.toml
+  $ tree_of_md_legacy build --config unicode/tree_of_md.toml
   TM202: warning: "dup" names more than one file; resolved by mdbase link order (nearest folder, then shortest path). Give the tree an `id:` and reference that to say which one you mean
     --> $TESTCASE_ROOT/unicode/trees-md/refer.tree.md:7:1
      |
      | [[dup]] を参照。
      | ^^^^^^^
   build: 0 created, 0 replaced, 0 deleted, 6 unchanged
-  $ tree-md check --config unicode/tree-md.toml
+  $ tree_of_md_legacy check --config unicode/tree_of_md.toml
   TM202: warning: "dup" names more than one file; resolved by mdbase link order (nearest folder, then shortest path). Give the tree an `id:` and reference that to say which one you mean
     --> $TESTCASE_ROOT/unicode/trees-md/refer.tree.md:7:1
      |
@@ -218,10 +220,10 @@ ambiguity warning stands — it is a warning, so it never fails either one.
 A collection may declare what its front matter must look like, in the
 `mdbase.yaml` and `_types/` its other mdbase tools already read. The schema
 is checked against the front matter as written, and reported with mdbase's
-own code beside tree-md's.
+own code beside tree_of_md's.
 
   $ printf -- '---\nid: wrong\nstatus: archived\n---\n\n# Wrong\n' > mdbase/trees-md/wrong.tree.md
-  $ tree-md build --config mdbase/tree-md.toml
+  $ tree_of_md_legacy build --config mdbase/tree_of_md.toml
   TM101 (schema_enum): error: /status: must be one of "draft", "published" (type "note")
     --> $TESTCASE_ROOT/mdbase/trees-md/wrong.tree.md:3:9
      |
@@ -234,7 +236,7 @@ own code beside tree-md's.
 is an effective value: nothing is written back to the note.
 
   $ printf -- '---\nid: wrong\nstatus: draft\n---\n\n# Fixed\n' > mdbase/trees-md/wrong.tree.md
-  $ tree-md build --config mdbase/tree-md.toml
+  $ tree_of_md_legacy build --config mdbase/tree_of_md.toml
   build: 2 created, 0 replaced, 0 deleted, 0 unchanged
   $ cat mdbase/generated/wrong.tree
   \title{Fixed}
@@ -247,7 +249,7 @@ is an effective value: nothing is written back to the note.
 reach comes with them. A note nobody publishes is not compiled at all, so the
 broken link in the diary does not fail the build for the pages that are.
 
-  $ tree-md build --config publish/tree-md.toml
+  $ tree_of_md_legacy build --config publish/tree_of_md.toml
   build: 4 created, 0 replaced, 0 deleted, 0 unchanged, 1 unpublished
   $ find publish/generated -name '*.tree' | sort
   publish/generated/PUBLIC/index.tree
@@ -269,7 +271,7 @@ A second build has nothing to do, though the copy now sits under an asset root
 where the asset lookup would otherwise find it and conclude that nothing
 needed copying.
 
-  $ tree-md build --config publish/tree-md.toml
+  $ tree_of_md_legacy build --config publish/tree_of_md.toml
   build: 0 created, 0 replaced, 0 deleted, 4 unchanged, 1 unpublished
 
 A link card is the metadata an Obsidian plugin already fetched for a URL and
@@ -287,8 +289,8 @@ the YAML the plugin writes it in, and the build asks the web nothing.
 Without the table every source is published, and the draft's broken link is a
 `TM202` like any other.
 
-  $ sed '/^\[publish\]/,$d' publish/tree-md.toml > publish/all.toml
-  $ tree-md check --config publish/all.toml
+  $ sed '/^\[publish\]/,$d' publish/tree_of_md.toml > publish/all.toml
+  $ tree_of_md_legacy check --config publish/all.toml
   TM202: error: unresolved wiki link "存在しないノート"
     --> $TESTCASE_ROOT/publish/trees-md/DAILY/2026-08-19.tree.md:7:1
      |
@@ -302,13 +304,13 @@ layout the sources are not in selects nothing — and publishing nothing emits
 no tree and deletes every tree the build wrote before, which would otherwise
 look exactly like a build with nothing to do.
 
-  $ sed 's|^from = .*|from = ["MIYA-LIS.NET/**"]|' publish/tree-md.toml > publish/elsewhere.toml
-  $ tree-md build --config publish/elsewhere.toml
+  $ sed 's|^from = .*|from = ["MIYA-LIS.NET/**"]|' publish/tree_of_md.toml > publish/elsewhere.toml
+  $ tree_of_md_legacy build --config publish/elsewhere.toml
   TM401: warning: $TESTCASE_ROOT/publish/elsewhere.toml: publish.from matched none of the 4 sources, so nothing is published
     --> $TESTCASE_ROOT/publish/elsewhere.toml
     note: its patterns are matched against the path of a source below its source root, with the root itself spent
   build: 0 created, 0 replaced, 4 deleted, 0 unchanged, 4 unpublished
   $ find publish/generated -name '*.tree' | sort
   $ find publish/assets -type f | sort
-  $ tree-md build --config publish/tree-md.toml
+  $ tree_of_md_legacy build --config publish/tree_of_md.toml
   build: 4 created, 0 replaced, 0 deleted, 0 unchanged, 1 unpublished
