@@ -118,6 +118,20 @@ let test_transclusion () =
      "\\scope{\\put\\transclude/heading{true}\\put\\transclude/toc{false}\\transclude{ISLAND}}\n" ^
      "\\scope{\\put\\transclude/heading{false}\\put\\transclude/toc{true}\\transclude{ISLAND}}\n")
     (List.assoc "PUBLICA.tree" (compile (forest [source; tree ~id:"ISLAND" ()])))
+let test_transclusion_flags () =
+  let with_flags flags = obj (["kind", `String "transclude"; "id", `String "ISLAND"; "header", `Bool true; "toc", `Bool true] @ flags) in
+  let source = tree ~id:"PUBLICA" ~content:[
+    with_flags ["numbered", `Bool false];
+    with_flags ["expanded", `Bool false; "metadata", `Bool true];
+    with_flags ["numbered", `Bool true; "expanded", `Bool true; "metadata", `Bool false]] () in
+  Alcotest.(check string) "only departures from Forester's defaults are put"
+    ("\\title{Public title}\n" ^
+     "\\scope{\\put\\transclude/heading{true}\\put\\transclude/toc{true}\\put\\transclude/numbered{false}\\transclude{ISLAND}}\n" ^
+     "\\scope{\\put\\transclude/heading{true}\\put\\transclude/toc{true}\\put\\transclude/expanded{false}\\put\\transclude/metadata{true}\\transclude{ISLAND}}\n" ^
+     "\\transclude{ISLAND}\n")
+    (List.assoc "PUBLICA.tree" (compile (forest [source; tree ~id:"ISLAND" ()])));
+  List.iter (fun flags -> reject (forest [tree ~id:"PUBLICA" ~content:[with_flags flags] (); tree ~id:"ISLAND" ()]))
+    [["numbered", `String "false"]; ["expanded", `Null]; ["folded", `Bool true]]
 let test_graph () =
   List.iter (fun content -> reject (forest [tree ~id:"PUBLICA" ~content ()]))
     [[transclude "MISSING"]; [markdown "[[MISSING|Public label]]"]; [transclude "publica"]];
@@ -514,6 +528,7 @@ let () = Alcotest.run "Public_forest"
     Alcotest.test_case "literal metadata and native inheritance" `Quick test_metadata;
     Alcotest.test_case "valid dates and safe native URLs" `Quick test_metadata_validation;
     Alcotest.test_case "structured transclusions and placement flags" `Quick test_transclusion;
+    Alcotest.test_case "optional numbered, expanded and metadata flags" `Quick test_transclusion_flags;
     Alcotest.test_case "public targets and containment/transclusion cycles" `Quick test_graph;
     Alcotest.test_case "isolated Markdown allowlist refuses residual syntax" `Quick test_markdown_boundary;
     Alcotest.test_case "protected code examples and inert ordinary math" `Quick test_protected_examples;

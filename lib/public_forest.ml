@@ -216,9 +216,12 @@ let validate_schema json =
     | "subtree" -> ignore (object_fields ["kind";"tree"] ["kind";"tree"] json);
       tree ~top:false (depth+1) (member "tree" json)
     | "transclude" ->
-      ignore (object_fields ["kind";"id";"header";"toc"] ["kind";"id";"header";"toc"] json);
+      (* numbered/expanded/metadata are optional: producers write them only
+         when they depart from Forester's defaults. *)
+      let fields = object_fields ["kind";"id";"header";"toc";"numbered";"expanded";"metadata"] ["kind";"id";"header";"toc"] json in
       ignore (id (member "id" json));
-      List.iter (fun k -> ignore (boolean (member k json))) ["header";"toc"]
+      List.iter (fun k -> ignore (boolean (member k json))) ["header";"toc"];
+      List.iter (fun k -> Option.iter (fun v -> ignore (boolean v)) (List.assoc_opt k fields)) ["numbered";"expanded";"metadata"]
     | "unavailable" ->
       let fields = object_fields ["kind";"label"] ["kind"] json in
       Option.iter (fun value -> ignore (string value)) (List.assoc_opt "label" fields)
@@ -497,10 +500,17 @@ let compile_forest roots = protect (fun () ->
     | "transclude" ->
       let id = string (member "id" node) in
       let header = boolean (member "header" node) and toc = boolean (member "toc" node) in
+      let flag key default = Option.fold ~none:default ~some:boolean (List.assoc_opt key (fields node)) in
+      (* Forester 6.0 default_section_flags: numbered and expanded on, metadata off. *)
+      let extras = List.filter_map (fun (key, default) ->
+          let value = flag key default in
+          if value = default then None
+          else Some ("\\put\\transclude/" ^ key ^ "{" ^ string_of_bool value ^ "}"))
+          ["numbered", true; "expanded", true; "metadata", false] in
       let transclusion = "\\transclude{" ^ id ^ "}" in
-      if header && toc then transclusion ^ "\n"
+      if header && toc && extras = [] then transclusion ^ "\n"
       else "\\scope{\\put\\transclude/heading{" ^ string_of_bool header ^
-        "}\\put\\transclude/toc{" ^ string_of_bool toc ^ "}" ^ transclusion ^ "}\n"
+        "}\\put\\transclude/toc{" ^ string_of_bool toc ^ "}" ^ String.concat "" extras ^ transclusion ^ "}\n"
     | "unavailable" ->
       let label = Option.value (optional "label" node) ~default:"[非公開]" in
       (* Native XML anchor builtin: [label](destination) instead enters URI
